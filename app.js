@@ -6,7 +6,7 @@ import * as dados from './dados.js';
 import { estado, aoMudar, fixarSecoes, falha } from './estado.js';
 import { desenharHoje, desenharSemana, desenharCaixa, aoAbrirTarefa } from './telas.js';
 import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto } from './tela-tarefa.js';
-import { desenharDiario, salvarAgora, esquecerDiario } from './tela-diario.js';
+import { desenharDiario, salvarAgora, esquecerDiario, pararDeOuvir } from './tela-diario.js';
 import * as preferencias from './preferencias.js';
 import { $, el, mostrarEstado, avisar, fecharAviso, ligarAviso, abrirFolha, fecharFolha, folhaAtual, ouvir, reiniciar, movimento } from './ui.js';
 
@@ -27,7 +27,7 @@ function desenharAtual(entrando = false) {
 aoMudar(() => desenharAtual(false));
 
 function irPara(aba, { deLado = false } = {}) {
-  if (estado.aba === 'diario' && aba !== 'diario') salvarAgora();
+  if (estado.aba === 'diario' && aba !== 'diario') { pararDeOuvir(); salvarAgora(); }
   if (estado.aba === 'tarefa' && aba !== 'tarefa') fecharTarefa();
   estado.aba = aba;
   for (const nome of [...ABAS, 'tarefa']) $(`tela-${nome}`).hidden = nome !== aba;
@@ -120,6 +120,7 @@ async function recarregar() {
 
 async function sair() {
   fecharFolha('folha-ajustes');
+  pararDeOuvir();
   salvarAgora();
   await dados.banco.auth.signOut();
   estado.usuario = null; estado.espacoId = null; estado.tarefas = [];

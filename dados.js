@@ -70,6 +70,34 @@ export async function salvarDiario(id, dia, texto) {
   return exigir(await banco.from('diario').insert({ dia, texto }).select('id').single()).id;
 }
 
+// Áudio e vídeo do diário: o arquivo vai para o balde privado "diario", na pasta do usuário; a lista fica em diario_midias.
+const CAMPOS_MIDIA = 'id,dia,tipo,caminho,mime,segundos,tamanho,removida,criado_em';
+
+export async function midiasDesde(usuarioId, desde) {
+  return exigir(await banco.from('diario_midias').select(CAMPOS_MIDIA).eq('usuario_id', usuarioId).eq('removida', false)
+    .gte('dia', desde).order('criado_em', { ascending: true }));
+}
+
+export async function guardarMidia(usuarioId, dia, tipo, arquivo, segundos) {
+  const mime = arquivo.type.split(';')[0];
+  const extensao = mime.endsWith('mp4') ? 'mp4' : mime.endsWith('ogg') ? 'ogg' : 'webm';
+  const caminho = `${usuarioId}/${dia}/${crypto.randomUUID()}.${extensao}`;
+  const { error } = await banco.storage.from('diario').upload(caminho, arquivo, { contentType: mime, upsert: false });
+  if (error) throw error;
+  return exigir(await banco.from('diario_midias').insert({ dia, tipo, caminho, mime, segundos, tamanho: arquivo.size })
+    .select(CAMPOS_MIDIA).single());
+}
+
+export async function baixarMidia(caminho) {
+  const { data, error } = await banco.storage.from('diario').download(caminho);
+  if (error) throw error;
+  return data;
+}
+
+export async function marcarMidia(id, removida) {
+  exigir(await banco.from('diario_midias').update({ removida }).eq('id', id));
+}
+
 // Exportar tudo o que é seu, num arquivo só (o Supabase grátis não faz cópia sozinho).
 export async function exportarTudo(espacoId, usuarioId) {
   const tarefas = exigir(await banco.from('tarefas').select('*').eq('espaco_id', espacoId).order('criado_em', { ascending: true }));
@@ -80,9 +108,11 @@ export async function exportarTudo(espacoId, usuarioId) {
   const anexos = filtrar(exigir(await banco.from('anexos').select('*')));
   const travadas = exigir(await banco.from('travadas').select('*').eq('usuario_id', usuarioId));
   const diario = exigir(await banco.from('diario').select('*').eq('usuario_id', usuarioId).order('dia', { ascending: true }));
+  // Áudios e vídeos: vem a lista; os arquivos ficam no balde "diario" do Supabase.
+  const diario_midias = exigir(await banco.from('diario_midias').select('*').eq('usuario_id', usuarioId).order('criado_em', { ascending: true }));
   return {
     sistema: 'Centelha', exportado_em: new Date().toISOString(),
-    contagem: { tarefas: tarefas.length, subtarefas: subtarefas.length, comentarios: comentarios.length, anexos: anexos.length, travadas: travadas.length, diario: diario.length },
-    tarefas, subtarefas, comentarios, anexos, travadas, diario,
+    contagem: { tarefas: tarefas.length, subtarefas: subtarefas.length, comentarios: comentarios.length, anexos: anexos.length, travadas: travadas.length, diario: diario.length, diario_midias: diario_midias.length },
+    tarefas, subtarefas, comentarios, anexos, travadas, diario, diario_midias,
   };
 }

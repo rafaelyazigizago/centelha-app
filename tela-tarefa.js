@@ -355,7 +355,7 @@ function abrirTravei() {
   $('folha-travei').replaceChildren(el('div', { classe: 'miolo' },
     el('div', { classe: 'alca' }),
     el('div', { classe: 'respira', 'aria-hidden': 'true', html: `<span class="anel"></span><span class="anel"></span>${icone('faisca', 'faisca')}` }),
-    el('div', { classe: 'centro' }, el('h2', { id: 'titulo-travei', style: 'font-size:1.9rem;justify-content:center' }, 'Tudo bem travar.'), el('p', { classe: 'data' }, 'O que pegou?')),
+    el('div', { classe: 'centro' }, el('h2', { id: 'titulo-travei', style: 'font-size:1.7rem;justify-content:center' }, 'Tudo bem travar.'), el('p', { classe: 'data' }, 'O que pegou?')),
     grupo('motivo', MOTIVOS, 'opcoes'),
     el('div', { classe: 'campo' },
       el('label', { for: 'travei-sinto' }, el('span', {}, 'O que aconteceu / o que estou sentindo'), el('span', { html: `${icone('cadeado')} só você vê`, classe: 'so-voce' })),
