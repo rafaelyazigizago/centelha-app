@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://hlvejnlirctodkvmjehj.supabase.co';
 // Chave pública por desenho: só abre o que as regras por linha (RLS) do banco deixarem.
 const CHAVE_PUBLICA = 'sb_publishable_B8VUf-oWJwakz9uBSXEeIA_TeSn9y0m';
 
-export const CAMPOS = 'id,titulo,notas,estado,dia,parte_do_dia,hora,area,etiquetas,lentes,prioridade_semana,vezes_adiada,' +
+export const CAMPOS = 'id,titulo,notas,estado,dia,parte_do_dia,hora,area,subgrupo,etiquetas,lentes,prioridade_semana,vezes_adiada,' +
   'porque,parei_aqui,proximo_passo,pronto_quando,resultado_meta,resultado_efeito,prova_url,privada,feita_em,criado_em';
 
 export let banco;
@@ -28,6 +28,19 @@ export async function carregarTarefas(espacoId, feitasDesde) {
   const feitas = exigir(await banco.from('tarefas').select(CAMPOS).eq('espaco_id', espacoId).eq('estado', 'feita')
     .gte('feita_em', feitasDesde).order('feita_em', { ascending: true }));
   return [...abertas, ...feitas];
+}
+
+// Quantos passos cada tarefa tem e quantos estão feitos ("1 de 3", como no Microsoft To Do).
+export async function contarPassos() {
+  const linhas = exigir(await banco.from('subtarefas').select('tarefa_id,feita').eq('removida', false));
+  const contagem = new Map();
+  for (const l of linhas) {
+    const c = contagem.get(l.tarefa_id) || { total: 0, feitos: 0 };
+    c.total += 1;
+    if (l.feita) c.feitos += 1;
+    contagem.set(l.tarefa_id, c);
+  }
+  return contagem;
 }
 
 export async function mudarTarefa(id, patch) {

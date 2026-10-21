@@ -144,6 +144,9 @@ section.grupo { margin-top: 22px; }
 
 .dobra { margin-top: 22px; border-radius: 18px; border: 1px dashed var(--linha); }
 .dobra > button { width: 100%; min-height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border: 0; background: transparent; text-align: left; font-weight: 700; }
+.grupos { display: flex; flex-direction: column; margin-top: 4px; }
+.dobra.subgrupo { margin-top: 0; border-style: solid; background: color-mix(in srgb, var(--cartao) 60%, transparent); }
+.dobra.subgrupo > button { min-height: 50px; font-size: 1rem; }
 .dobra .seta { display: inline-block; transition: transform calc(.3s * var(--t)) var(--mola); }
 .dobra[data-aberto="true"] .seta { transform: rotate(90deg); }
 .gaveta { display: grid; grid-template-rows: 0fr; transition: grid-template-rows calc(.35s * var(--t)) ease; }
@@ -290,8 +293,8 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 .abas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: color-mix(in srgb, var(--fundo) 90%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--linha);
   padding: 8px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
-.abas .trilho { max-width: 40rem; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); position: relative; }
-.abas .luzinha { position: absolute; top: 0; left: 0; width: 25%; height: 100%; display: grid; place-items: center; transition: transform calc(.4s * var(--t)) var(--mola); pointer-events: none; }
+.abas .trilho { max-width: 40rem; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); position: relative; }
+.abas .luzinha { position: absolute; top: 0; left: 0; width: 20%; height: 100%; display: grid; place-items: center; transition: transform calc(.4s * var(--t)) var(--mola); pointer-events: none; }
 .abas .luzinha::before { content: ""; width: 74%; height: 100%; border-radius: 16px; background: color-mix(in srgb, var(--luz) 26%, transparent); }
 .aba { min-height: 58px; border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-size: .9rem; color: var(--suave); position: relative; z-index: 1; }

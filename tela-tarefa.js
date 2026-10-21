@@ -98,6 +98,7 @@ function desenharTarefa() {
     cartaoPassos(),
     cartaoMeta(),
     dobra('tarefa-mais', 'Mais detalhes', null, [
+      linhaGrupo(),
       linhaParte(),
       linhaPrioridade(),
       campoTexto('pronto_quando', 'Pronto quando', { dica: 'como você vai saber que acabou' }),
@@ -188,6 +189,30 @@ function linhaLentes() {
     })));
 }
 
+// Área (o grupo) e subgrupo, com as opções que já existem; dá para escrever um novo.
+function linhaGrupo() {
+  const alvo = t;
+  const areas = [...new Set(estado.tarefas.map((x) => x.area).filter(Boolean))].sort();
+  const subgrupos = () => [...new Set(estado.tarefas.filter((x) => x.area === alvo.area).map((x) => x.subgrupo).filter(Boolean))].sort();
+  const listaSub = el('datalist', { id: 'subgrupos' }, subgrupos().map((s) => el('option', { value: s })));
+  const campo = (chave, rotulo, lista, dica) => {
+    const entrada = el('input', { id: 'campo-' + chave, type: 'text', list: lista, autocomplete: 'off', placeholder: dica });
+    entrada.value = alvo[chave] || '';
+    entrada.addEventListener('change', async () => {
+      const v = entrada.value.trim() || null;
+      if (v === (alvo[chave] || null)) return;
+      await gravarEm(alvo, { [chave]: v });
+      if (chave === 'area') listaSub.replaceChildren(...subgrupos().map((s) => el('option', { value: s })));
+    });
+    return el('div', { classe: 'campo' }, el('label', { for: 'campo-' + chave }, el('span', {}, rotulo)), entrada);
+  };
+  return el('div', { classe: 'bloco', style: 'margin-top:0' },
+    campo('area', 'Grupo (área)', 'areas', 'ex.: Soluções'),
+    campo('subgrupo', 'Subgrupo', 'subgrupos', 'ex.: CONSERTOS'),
+    el('datalist', { id: 'areas' }, areas.map((a) => el('option', { value: a }))),
+    listaSub);
+}
+
 function linhaParte() {
   const alvo = t;
   return el('div', { classe: 'campo', id: 'tarefa-parte' },
@@ -236,6 +261,7 @@ function redesenharPassos(entrou) {
   if (!lista) return;
   if (passos === null) { lista.replaceChildren(el('p', { classe: 'vazio' }, 'Abrindo os passos…')); return; }
   const feitos = passos.filter((p) => p.feita).length;
+  if (t) estado.passos.set(t.id, { total: passos.length, feitos });   // o "1 de 3" das listas acompanha
   $('passos-n').textContent = passos.length ? `${feitos} de ${passos.length}` : '';
   if (!passos.length) { lista.replaceChildren(el('p', { classe: 'vazio' }, 'Sem passos. Quebre em pedaços pequenos, se ajudar.')); return; }
   lista.replaceChildren(...passos.map((p) => el('div', {

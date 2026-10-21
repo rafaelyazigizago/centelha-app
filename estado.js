@@ -15,6 +15,8 @@ export const estado = {
   aba: 'hoje',
   tarefaAberta: null,
   recem: null,         // id da lâmpada que acabou de acender
+  passos: new Map(),   // id da tarefa → { total, feitos }
+  abertasNoInicio: new Set(),   // as abertas ao carregar: ficam na aba Grupos mesmo depois de feitas
   carregadoEm: 0,
 };
 
@@ -25,6 +27,7 @@ export const redesenhar = () => ouvintes.forEach((f) => f());
 export function fixarSecoes() {
   estado.hoje = hojeISO();
   estado.secoes = new Map(estado.tarefas.map((t) => [t.id, secaoDe(t, estado.hoje)]));
+  estado.abertasNoInicio = new Set(estado.tarefas.filter((t) => t.estado === 'aberta').map((t) => t.id));
   estado.marcas.clear();
 }
 export const secao = (t) => estado.secoes.get(t.id) ?? secaoDe(t, estado.hoje);
@@ -101,15 +104,17 @@ export async function recomecar(lista) {
 }
 
 // Anotar: "amanhã", "sexta", "24/10" viram o dia; "#casa" vira etiqueta; sem dia vai para a Caixa.
-export async function anotar(texto, ignorarData) {
+// "extra" leva a área e o subgrupo quando se anota dentro de um grupo.
+export async function anotar(texto, ignorarData, extra = {}) {
   const lido = interpretar(texto);
   const dia = ignorarData ? null : lido.dia;
   const titulo = ignorarData ? texto.replace(/(^|\s)#[\p{L}\p{N}_-]+/gu, ' ').replace(/\s+/g, ' ').trim() : lido.titulo;
   if (!titulo) return null;
   mostrarEstado('Salvando…');
   try {
-    const nova = await dados.criarTarefa({ espaco_id: estado.espacoId, titulo, dia, etiquetas: lido.etiquetas });
+    const nova = await dados.criarTarefa({ espaco_id: estado.espacoId, titulo, dia, etiquetas: lido.etiquetas, ...extra });
     nova.nova = true;
+    estado.abertasNoInicio.add(nova.id);
     estado.tarefas.unshift(nova);
     estado.secoes.set(nova.id, secaoDe(nova, estado.hoje));
     redesenhar();

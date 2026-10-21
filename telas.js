@@ -12,17 +12,19 @@ export const aoAbrirTarefa = (f) => { abrirTarefa = f; };
 const visiveis = (t) => t.estado !== 'cancelada';
 
 // ---------- Uma tarefa: a lâmpada, o título, o porquê e um botão de um toque ----------
-export function linhaTarefa(t, { umToque } = {}) {
+export function linhaTarefa(t, { umToque, semGrupo } = {}) {
   const feita = t.estado === 'feita';
   const marca = estado.marcas.get(t.id);
   const classes = ['tarefa', feita && 'feita', marca && 'saiu', t.nova && 'entrou', estado.recem === t.id && 'recem'].filter(Boolean).join(' ');
   t.nova = false;
   const marcas = [];
   if (t.dia && !['hoje', 'prioridade', 'amanha'].includes(secao(t)) && !marca) marcas.push(el('span', { classe: 'marca-t' }, rotuloDia(t.dia)));
+  const passos = estado.passos.get(t.id);
+  if (passos?.total) marcas.push(el('span', { classe: 'marca-t' }, `${passos.feitos} de ${passos.total} passos`));
   for (const [chave, nome] of LENTES) if ((t.lentes || []).includes(chave)) marcas.push(el('span', { classe: 'marca-t', html: `${icone(chave)} ${nome}` }));
   if ((t.etiquetas || []).some((e) => /^ideias?$/i.test(e))) marcas.push(el('span', { classe: 'marca-t ideia' }, 'ideia'));
-  for (const e of (t.etiquetas || []).filter((e) => !/^ideias?$/i.test(e)).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t' }, '#' + e));
-  if (t.area) marcas.push(el('span', { classe: 'marca-t' }, t.area));
+  for (const e of (t.etiquetas || []).filter((e) => !/^ideias?$/i.test(e) && e !== t.subgrupo).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t' }, '#' + e));
+  if (!semGrupo && (t.area || t.subgrupo)) marcas.push(el('span', { classe: 'marca-t' }, [t.area, t.subgrupo].filter(Boolean).join(' › ')));
   if (marca) marcas.push(el('span', { classe: 'marca-t aviso' }, marca));
 
   return el('div', { classe: classes, 'data-id': t.id },
@@ -46,17 +48,17 @@ function comPorque(no, t) {
   if (p) p.textContent = t.porque;
   return no;
 }
-const linha = (t, o) => comPorque(linhaTarefa(t, o), t);
+export const linha = (t, o) => comPorque(linhaTarefa(t, o), t);
 const lista = (tarefas, o) => el('div', { classe: 'lista' }, tarefas.map((t) => linha(t, o)));
 
-export function dobra(id, titulo, quantos, conteudo) {
-  const aberta = dobrasAbertas.has(id);
-  const caixa = el('div', { classe: 'dobra', 'data-aberto': String(aberta) });
+export function dobra(id, titulo, quantos, conteudo, conjunto = dobrasAbertas, classe = '') {
+  const aberta = conjunto.has(id);
+  const caixa = el('div', { classe: ['dobra', classe].filter(Boolean).join(' '), 'data-aberto': String(aberta) });
   const botao = el('button', {
     type: 'button', 'aria-expanded': String(aberta),
     onclick: () => {
-      const agora = !dobrasAbertas.has(id);
-      if (agora) dobrasAbertas.add(id); else dobrasAbertas.delete(id);
+      const agora = !conjunto.has(id);
+      if (agora) conjunto.add(id); else conjunto.delete(id);
       caixa.dataset.aberto = String(agora);
       botao.setAttribute('aria-expanded', String(agora));
       gaveta.inert = !agora;

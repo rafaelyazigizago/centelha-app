@@ -7,11 +7,12 @@ import { estado, aoMudar, fixarSecoes, falha } from './estado.js';
 import { desenharHoje, desenharSemana, desenharCaixa, aoAbrirTarefa } from './telas.js';
 import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto } from './tela-tarefa.js';
 import { desenharDiario, salvarAgora, esquecerDiario, pararDeOuvir } from './tela-diario.js';
+import { desenharGrupos } from './tela-grupos.js';
 import * as preferencias from './preferencias.js';
 import { $, el, mostrarEstado, avisar, fecharAviso, ligarAviso, abrirFolha, fecharFolha, folhaAtual, ouvir, reiniciar, movimento } from './ui.js';
 
-const ABAS = ['hoje', 'semana', 'caixa', 'diario'];
-const NOMES = { hoje: 'Hoje', semana: 'Semana', caixa: 'Caixa', diario: 'Diário' };
+const ABAS = ['hoje', 'semana', 'grupos', 'caixa', 'diario'];
+const NOMES = { hoje: 'Hoje', semana: 'Semana', grupos: 'Grupos', caixa: 'Caixa', diario: 'Diário' };
 const RECARREGAR_DEPOIS_MS = 30 * 60 * 1000;
 let abaDeVolta = 'hoje';
 
@@ -20,6 +21,7 @@ function desenharAtual(entrando = false) {
   if (estado.aba === 'tarefa') { atualizarTarefa(); return; }
   if (estado.aba === 'hoje') desenharHoje();
   else if (estado.aba === 'semana') desenharSemana(entrando);
+  else if (estado.aba === 'grupos') desenharGrupos();
   else if (estado.aba === 'caixa') desenharCaixa();
   else if (estado.aba === 'diario') desenharDiario();
   estado.recem = null;   // a lâmpada nova já acendeu na lista
@@ -97,7 +99,7 @@ async function entrar(usuario) {
 async function carregar() {
   const desde = deISO(segundaDaSemana(hojeISO())).toISOString();
   try {
-    estado.tarefas = await dados.carregarTarefas(estado.espacoId, desde);
+    [estado.tarefas, estado.passos] = await Promise.all([dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos()]);
   } catch (erro) {
     console.error(erro);
     mostrarEstado('Não carregou', true);

@@ -64,3 +64,22 @@ export function feitasNaSemana(tarefas, hoje) {
   const segunda = segundaDaSemana(hoje);
   return tarefas.filter((t) => t.estado === 'feita' && (diaLocal(t.feita_em) || '') >= segunda).length;
 }
+
+// Grupos (aba "Grupos", no jeito do Microsoft To Do): Área → subgrupo → tarefas.
+// Áreas e subgrupos com mais tarefas primeiro; "sem área" e "sem subgrupo" por último; tarefas por dia, depois por criação.
+export function agruparPorArea(tarefas) {
+  const porArea = new Map();
+  for (const t of tarefas) {
+    const area = t.area || null, sub = t.subgrupo || null;
+    if (!porArea.has(area)) porArea.set(area, new Map());
+    const subs = porArea.get(area);
+    if (!subs.has(sub)) subs.set(sub, []);
+    subs.get(sub).push(t);
+  }
+  const ordemTarefa = (a, b) => (a.dia ?? '9999').localeCompare(b.dia ?? '9999') || (a.criado_em || '').localeCompare(b.criado_em || '');
+  const ordemGrupo = (a, b) => (a.nome === null) - (b.nome === null) || b.total - a.total || String(a.nome).localeCompare(String(b.nome), 'pt-BR');
+  return [...porArea].map(([area, subs]) => {
+    const subgrupos = [...subs].map(([nome, lista]) => ({ nome, total: lista.length, tarefas: lista.sort(ordemTarefa) })).sort(ordemGrupo);
+    return { nome: area, total: subgrupos.reduce((s, g) => s + g.total, 0), subgrupos };
+  }).sort(ordemGrupo);
+}
