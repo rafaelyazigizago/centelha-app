@@ -1,0 +1,271 @@
+// Centelha · telas Hoje, Semana e Caixa de entrada.
+import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
+import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana } from './calculos.js';
+import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
+import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
+
+const PARTES = [['manha', 'manhã'], ['almoco', 'almoço'], ['tarde', 'tarde'], ['noite', 'noite'], [null, 'a qualquer hora']];
+const LENTES = [['dinheiro', 'Dinheiro'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];
+const dobrasAbertas = new Set();
+let abrirTarefa = () => {};
+export const aoAbrirTarefa = (f) => { abrirTarefa = f; };
+const visiveis = (t) => t.estado !== 'cancelada';
+
+// ---------- Uma tarefa: a lâmpada, o título, o porquê e um botão de um toque ----------
+export function linhaTarefa(t, { umToque } = {}) {
+  const feita = t.estado === 'feita';
+  const marca = estado.marcas.get(t.id);
+  const classes = ['tarefa', feita && 'feita', marca && 'saiu', t.nova && 'entrou', estado.recem === t.id && 'recem'].filter(Boolean).join(' ');
+  t.nova = false;
+  const marcas = [];
+  if (t.dia && !['hoje', 'prioridade', 'amanha'].includes(secao(t)) && !marca) marcas.push(el('span', { classe: 'marca-t' }, rotuloDia(t.dia)));
+  for (const [chave, nome] of LENTES) if ((t.lentes || []).includes(chave)) marcas.push(el('span', { classe: 'marca-t', html: `${icone(chave)} ${nome}` }));
+  if ((t.etiquetas || []).some((e) => /^ideias?$/i.test(e))) marcas.push(el('span', { classe: 'marca-t ideia' }, 'ideia'));
+  for (const e of (t.etiquetas || []).filter((e) => !/^ideias?$/i.test(e)).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t' }, '#' + e));
+  if (t.area) marcas.push(el('span', { classe: 'marca-t' }, t.area));
+  if (marca) marcas.push(el('span', { classe: 'marca-t aviso' }, marca));
+
+  return el('div', { classe: classes, 'data-id': t.id },
+    el('button', {
+      type: 'button', classe: 'botao-lamp', 'aria-pressed': String(feita), 'data-mantem-aviso': true,
+      'aria-label': `${feita ? 'Feita' : 'Marcar como feita'}: ${t.titulo}`, html: lampada(feita),
+      onclick: (e) => alternarFeita(t, e.currentTarget),
+    }),
+    el('button', { type: 'button', classe: 'texto', 'aria-label': `Abrir: ${t.titulo}`, onclick: () => abrirTarefa(t) },
+      el('span', { classe: 'titulo-t' }, t.titulo),
+      t.porque ? el('span', { classe: 'porque', html: `${icone('faisca')}<span></span>` }) : null,
+      marcas.length ? el('span', { classe: 'marcas' }, marcas) : null),
+    umToque && !feita ? el('button', {
+      type: 'button', classe: 'pilula um-toque', 'data-mantem-aviso': true,
+      onclick: () => moverPara(t, umToque === 'Amanhã' ? somarDias(estado.hoje, 1) : estado.hoje),
+    }, umToque) : null,
+  );
+}
+function comPorque(no, t) {
+  const p = no.querySelector('.porque span');
+  if (p) p.textContent = t.porque;
+  return no;
+}
+const linha = (t, o) => comPorque(linhaTarefa(t, o), t);
+const lista = (tarefas, o) => el('div', { classe: 'lista' }, tarefas.map((t) => linha(t, o)));
+
+export function dobra(id, titulo, quantos, conteudo) {
+  const aberta = dobrasAbertas.has(id);
+  const caixa = el('div', { classe: 'dobra', 'data-aberto': String(aberta) });
+  const botao = el('button', {
+    type: 'button', 'aria-expanded': String(aberta),
+    onclick: () => {
+      const agora = !dobrasAbertas.has(id);
+      if (agora) dobrasAbertas.add(id); else dobrasAbertas.delete(id);
+      caixa.dataset.aberto = String(agora);
+      botao.setAttribute('aria-expanded', String(agora));
+      gaveta.inert = !agora;
+    },
+  }, el('span', { classe: 'seta', 'aria-hidden': 'true' }, '›'), el('span', {}, titulo, quantos == null ? '' : ' ', quantos == null ? '' : el('span', { classe: 'n' }, `· ${quantos}`)));
+  const gaveta = el('div', { classe: 'gaveta' }, el('div', {}, el('div', { classe: 'miolo-dobra' }, conteudo)));
+  gaveta.inert = !aberta;   // fechada, nada de dentro recebe o foco
+  caixa.append(botao, gaveta);
+  return caixa;
+}
+
+// ---------- Varal pequeno do dia ----------
+let ultimasAcesas = null;
+function varalMini() {
+  const { total, acesas } = lampadasDoDia(estado.tarefas, estado.hoje);
+  const n = Math.min(total, 12);
+  const largura = 320;
+  let html = `<path class="fio" d="M0 4 Q${largura / 2} 30 ${largura} 4"/>`;
+  const acendeuAgora = ultimasAcesas !== null && acesas > ultimasAcesas;
+  for (let i = 0; i < n; i++) {
+    const x = n === 1 ? largura / 2 : 20 + i * ((largura - 40) / (n - 1));
+    const y = 4 + Math.sin((x / largura) * Math.PI) * 12;
+    const acesa = i < Math.min(acesas, n);
+    const anima = acendeuAgora && i === Math.min(acesas, n) - 1 ? ' acendendo' : '';
+    html += `<g transform="translate(${x - 9} ${y})"><g class="${anima.trim()}" style="transform-box:fill-box;transform-origin:center">${lampadaInterna(acesa, 0, 2, 18, 24)}</g></g>`;
+  }
+  const subiu = ultimasAcesas !== null && acesas !== ultimasAcesas;
+  ultimasAcesas = acesas;
+  const numero = el('span', { classe: 'numero' + (subiu ? ' subiu' : '') }, String(acesas));
+  return [
+    el('div', { classe: 'varal-mini', 'aria-hidden': 'true', html: `<svg viewBox="0 0 ${largura} 56">${html}</svg>` }),
+    el('p', { classe: 'contagem' }, total ? numero : '', total ? ` de ${total} acesas` : 'Nenhuma lâmpada para hoje ainda'),
+  ];
+}
+
+// ---------- Anotar, com a prévia de para onde vai ----------
+let ignorarData = false;
+function formAnotar() {
+  const campo = el('input', { id: 'texto-anotar', type: 'text', enterkeyhint: 'done', autocomplete: 'off', placeholder: 'Anotar…' });
+  const previa = el('p', { classe: 'dica', id: 'previa', 'aria-live': 'polite' }, 'ex.: ligar para o contador amanhã');
+  const mostrar = () => {
+    const texto = campo.value.trim();
+    if (!texto) { ignorarData = false; previa.replaceChildren('ex.: ligar para o contador amanhã'); return; }
+    const lido = interpretar(texto);
+    const partes = [];
+    if (lido.dia && !ignorarData) {
+      partes.push(`Vai para: ${rotuloDia(lido.dia)}`);
+      partes.push(el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => { ignorarData = true; mostrar(); } }, `"${lido.palavraData}" não é data`));
+    } else {
+      partes.push('Vai para: Caixa de entrada');
+      if (lido.dia) partes.push(el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => { ignorarData = false; mostrar(); } }, `Usar "${lido.palavraData}"`));
+    }
+    if (lido.etiquetas.length) partes.splice(1, 0, ` · ${lido.etiquetas.map((e) => '#' + e).join(' ')}`);
+    previa.replaceChildren(...partes);
+  };
+  campo.addEventListener('input', () => { ignorarData = false; mostrar(); });
+  const form = el('form', { classe: 'anotar', autocomplete: 'off', 'data-mantem-aviso': true },
+    el('label', { for: 'texto-anotar' }, 'Anotar uma tarefa'),
+    el('div', { classe: 'linha-anotar' }, campo, el('button', { type: 'submit', classe: 'btn' }, 'Anotar')),
+    previa);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const texto = campo.value.trim();
+    if (!texto) return;
+    const nova = await anotar(texto, ignorarData);
+    if (nova) { campo.value = ''; ignorarData = false; mostrar(); setTimeout(() => $('texto-anotar')?.focus(), 30); }
+  });
+  return form;
+}
+
+// ---------- HOJE ----------
+export function desenharHoje() {
+  const tela = $('tela-hoje');
+  const doTipo = (s) => estado.tarefas.filter((t) => visiveis(t) && secao(t) === s && passaNasLentes(t, estado.lentes));
+  const hoje = diaPorExtenso(estado.hoje);
+  const blocos = [
+    el('h1', { id: 'titulo-hoje' }, 'Hoje'),
+    el('p', { classe: 'data' }, hoje[0].toUpperCase() + hoje.slice(1)),
+    ...varalMini(),
+    formAnotar(),
+  ];
+
+  const prioridades = doTipo('prioridade');
+  if (prioridades.length) blocos.push(el('section', { classe: 'grupo cartao prioridades' }, el('h2', {}, 'Prioridades da semana'), lista(prioridades)));
+
+  blocos.push(el('div', { classe: 'lentes', role: 'group', 'aria-label': 'Lentes' }, LENTES.map(([chave, nome]) => el('button', {
+    type: 'button', classe: 'pilula', 'aria-pressed': String(estado.lentes.has(chave)), html: `${icone(chave)}${nome}`,
+    onclick: () => {
+      if (estado.lentes.has(chave)) estado.lentes.delete(chave); else estado.lentes.add(chave);
+      desenharHoje();
+      reiniciar(document.querySelector(`.lentes .pilula:nth-child(${LENTES.findIndex(([c]) => c === chave) + 1})`), 'pop');
+    },
+  }))));
+
+  const doDia = doTipo('hoje');
+  const grupoHoje = el('section', { classe: 'grupo' }, el('h2', {}, 'Hoje', el('span', { classe: 'n' }, String(doDia.length))));
+  if (!doDia.length) {
+    grupoHoje.append(el('p', { classe: 'vazio' }, estado.lentes.size
+      ? 'Nenhuma tarefa de hoje com essa lente. Abra uma tarefa para marcar as lentes dela.'
+      : 'Nada marcado para hoje. Anote acima ou traga algo da Caixa de entrada.'));
+  }
+  for (const [parte, nome] of PARTES) {
+    const das = doDia.filter((t) => (t.parte_do_dia || null) === parte).sort(ordenar);
+    if (das.length) grupoHoje.append(el('p', { classe: 'rotulo' }, nome), lista(das, { umToque: 'Amanhã' }));
+  }
+  blocos.push(grupoHoje);
+
+  const amanha = doTipo('amanha').sort(ordenar);
+  if (amanha.length) blocos.push(el('section', { classe: 'grupo' }, el('h2', {}, 'Amanhã', el('span', { classe: 'n' }, String(amanha.length))), lista(amanha, { umToque: 'Hoje' })));
+
+  const depois = doTipo('depois').sort((a, b) => a.dia.localeCompare(b.dia) || ordenar(a, b));
+  if (depois.length) blocos.push(dobra('depois', 'Próximos dias', depois.length, lista(depois, { umToque: 'Hoje' })));
+
+  const atras = doTipo('para-tras').sort((a, b) => b.dia.localeCompare(a.dia) || ordenar(a, b));
+  if (atras.length) {
+    const abertas = atras.filter((t) => t.estado === 'aberta' && !estado.marcas.has(t.id));
+    const recomeco = el('div', { classe: 'fileira' });
+    const pedir = () => recomeco.replaceChildren(el('button', {
+      type: 'button', classe: 'btn claro', 'data-mantem-aviso': true,
+      onclick: () => recomeco.replaceChildren(
+        el('span', { classe: 'ajuda' }, `Isso traz ${abertas.length} tarefas para hoje.`),
+        el('button', { type: 'button', classe: 'btn', 'data-mantem-aviso': true, onclick: () => recomecar(abertas) }, `Sim, trazer ${abertas.length}`),
+        el('button', { type: 'button', classe: 'btn claro', onclick: pedir }, 'Não'),
+      ),
+    }, 'Recomeçar: trazer todas para hoje'));
+    if (abertas.length > 1) pedir();
+    blocos.push(dobra('atras', 'Ficou para trás', atras.length, [
+      el('p', { classe: 'ajuda' }, 'Sem pressa. Traga o que cabe hoje e deixe o resto aqui.'),
+      abertas.length > 1 ? recomeco : null,
+      lista(atras, { umToque: 'Hoje' }),
+    ]));
+  }
+  tela.replaceChildren(...blocos.filter(Boolean));
+}
+
+const ORDEM_PARTE = { manha: 1, almoco: 2, tarde: 3, noite: 4 };
+function ordenar(a, b) {
+  if (a.estado !== b.estado) return a.estado === 'feita' ? 1 : -1;
+  const pa = ORDEM_PARTE[a.parte_do_dia] ?? 9, pb = ORDEM_PARTE[b.parte_do_dia] ?? 9;
+  if (pa !== pb) return pa - pb;
+  return (a.hora ?? '99').localeCompare(b.hora ?? '99') || (a.criado_em || '').localeCompare(b.criado_em || '');
+}
+
+// ---------- CAIXA DE ENTRADA ----------
+export function desenharCaixa() {
+  const tela = $('tela-caixa');
+  const daCaixa = estado.tarefas.filter((t) => visiveis(t) && t.estado === 'aberta' && secao(t) === 'caixa');
+  const linhas = daCaixa.map((t) => {
+    const no = linha(t);
+    if (estado.marcas.has(t.id)) return no;
+    const escolher = el('input', { type: 'date', 'aria-label': `Outro dia para ${t.titulo}`, hidden: true,
+      onchange: (e) => { if (e.target.value) moverPara(t, e.target.value); } });
+    no.append(el('div', { classe: 'fileira', style: 'width:100%;padding-left:58px' },
+      el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => moverPara(t, estado.hoje) }, 'Hoje'),
+      el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => moverPara(t, somarDias(estado.hoje, 1)) }, 'Amanhã'),
+      el('button', { type: 'button', classe: 'pilula', onclick: () => { escolher.hidden = false; try { escolher.showPicker?.(); } catch { /* sem seletor: o campo fica à vista */ } escolher.focus(); } }, 'Outro dia'),
+      escolher));
+    no.style.flexWrap = 'wrap';
+    return no;
+  });
+  tela.replaceChildren(
+    el('h1', { id: 'titulo-caixa' }, 'Caixa de entrada'),
+    el('p', { classe: 'data' }, 'Esperando um dia. Escolha com um toque ou deixe aqui.'),
+    daCaixa.length ? el('div', { classe: 'lista', style: 'margin-top:16px' }, linhas)
+      : el('p', { classe: 'vazio', style: 'margin-top:16px' }, 'Vazia. O que você anotar sem dia aparece aqui.'),
+  );
+}
+
+// ---------- SEMANA: o varal ----------
+let diaEscolhido = null;
+export function desenharSemana(entrando = false) {
+  const tela = $('tela-semana');
+  const dias = varalDaSemana(estado.tarefas, estado.hoje);
+  if (!diaEscolhido || !dias.some((d) => d.iso === diaEscolhido)) diaEscolhido = estado.hoje;
+  const segunda = segundaDaSemana(estado.hoje), domingo = somarDias(segunda, 6);
+  const [, mesS, diaS] = segunda.split('-'), [, mesD, diaD] = domingo.split('-');
+  const intervalo = mesS === mesD ? `${+diaS} a ${+diaD}` : `${+diaS}/${mesS} a ${+diaD}/${mesD}`;
+
+  let html = '<path class="fio" d="M2 18 Q90 74 180 40 T358 18"/>';
+  dias.forEach((d, i) => {
+    const x = 22 + i * 52.6;
+    const y = x <= 180 ? 18 + Math.sin(((x - 2) / 178) * Math.PI) * 30 : 40 - Math.sin(((x - 180) / 178) * Math.PI) * 14;
+    const acesa = d.acesas > 0;
+    const forca = d.total ? d.acesas / d.total : 0;
+    const atraso = entrando && movimento() !== 'parado' ? i * (movimento() === 'calmo' ? 60 : 110) : 0;
+    const legenda = d.domingo && !d.total ? 'descanso' : d.total ? `${d.acesas} de ${d.total}` : '';
+    html += `<g transform="translate(${x - 15} ${y})"><g class="pendente${entrando ? ' balanca' : ''}${d.iso === diaEscolhido ? ' escolhido' : ''}" data-iso="${d.iso}" role="button" tabindex="0" aria-label="${d.nome}${d.hoje ? ', hoje' : ''}: ${legenda || 'nada marcado'}" style="transform-box:fill-box;transform-origin:15px 0;animation-delay:${atraso}ms">` +
+      `<line x1="15" y1="0" x2="15" y2="10" stroke="currentColor" stroke-width="1.4" style="color:var(--suave)"/>` +
+      `<g style="opacity:${acesa ? (.55 + .45 * forca).toFixed(2) : 1}">${lampadaInterna(acesa, 0, 8, 30, 40)}</g>` +
+      (d.domingo ? '<text x="27" y="18" style="font-size:12px">☾</text>' : '') +
+      `<text x="15" y="66" class="${d.hoje ? 'hoje-rot' : ''}">${d.nome}</text>` +
+      `<text x="15" y="80">${d.hoje ? 'hoje' : legenda}</text></g></g>`;
+  });
+  const varal = el('div', { classe: 'varal', html: `<svg viewBox="0 0 360 140" role="group" aria-label="Varal da semana">${html}</svg>` });
+  varal.querySelectorAll('.pendente').forEach((g) => {
+    const escolher = () => { diaEscolhido = g.dataset.iso; desenharSemana(false); const n = $('tela-semana').querySelector(`.pendente[data-iso="${diaEscolhido}"]`); if (n) reiniciar(n, 'balanca'); };
+    g.addEventListener('click', escolher);
+    g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); escolher(); } });
+  });
+
+  const doDia = tarefasDoDia(estado.tarefas, diaEscolhido).filter(visiveis).sort(ordenar);
+  const nomeDia = diaEscolhido === estado.hoje ? 'Hoje' : diaPorExtenso(diaEscolhido);
+  tela.replaceChildren(
+    el('h1', { id: 'titulo-semana' }, 'Esta semana'),
+    el('p', { classe: 'data' }, intervalo),
+    varal,
+    el('section', { classe: 'grupo cartao' },
+      el('h2', {}, nomeDia[0].toUpperCase() + nomeDia.slice(1), el('span', { classe: 'n' }, String(doDia.length))),
+      doDia.length ? el('div', { classe: 'lista', style: 'margin-top:10px' }, doDia.map((t) => linha(t)))
+        : el('p', { classe: 'vazio' }, diaEscolhido === domingo ? 'Domingo é descanso.' : 'Nada marcado para este dia.')),
+  );
+}

@@ -1,55 +1,105 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-tema="dia">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Centelha</title>
   <meta name="description" content="Tarefas, ideias e segundo cérebro de Rafael Yazigi.">
-  <meta name="theme-color" content="#1f4a3c">
+  <meta name="theme-color" content="#F8F5EE">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icones/icone-192.png">
   <link rel="apple-touch-icon" href="icones/icone-192.png">
+  <link rel="preload" href="fontes/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fontes/bricolage-grotesque-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="estilo.css">
   <script src="vendor/supabase-2.117.2.js" defer></script>
   <script type="module" src="app.js"></script>
 </head>
-<body>
+<body class="mov-vivo">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <radialGradient id="g-brilho"><stop offset="0" stop-color="currentColor" stop-opacity=".9"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient>
+      <symbol id="i-faisca" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1.5c.5 4.6 2.1 7.6 4.2 9.3 1.5 1.2 3.6 1.7 6.3 1.2-2.7.5-4.8 1.3-6.3 2.8-1.9 2-3.4 5-4.2 7.7-.8-2.7-2.3-5.7-4.2-7.7-1.5-1.5-3.6-2.3-6.3-2.8 2.7.5 4.8 0 6.3-1.2 2.1-1.7 3.7-4.7 4.2-9.3z"/></symbol>
+      <symbol id="i-hoje" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+      <symbol id="i-semana" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M2 6c4 3 6 3 10 3s6 0 10-3"/><circle cx="6" cy="11.5" r="2.2" fill="currentColor"/><circle cx="12" cy="13" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="11.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+      <symbol id="i-caixa" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3 13l2.5-8h13L21 13v6H3z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M3 13h5l1.5 2.5h5L16 13h5"/></symbol>
+      <symbol id="i-diario" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M5 3h12a2 2 0 0 1 2 2v16H7a2 2 0 0 1-2-2z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9 8h6M9 12h6"/></symbol>
+      <symbol id="i-dinheiro" viewBox="0 0 24 24"><ellipse cx="12" cy="7" rx="7" ry="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></symbol>
+      <symbol id="i-tempo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M6 3h12M6 21h12M7 3c0 5 5 6 5 9s-5 4-5 9M17 3c0 5-5 6-5 9s5 4 5 9"/></symbol>
+      <symbol id="i-amor" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/></symbol>
+      <symbol id="i-engrenagem" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+      <symbol id="i-ouvir" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 9h4l5-4v14l-5-4H4z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></symbol>
+      <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path fill="none" stroke="currentColor" stroke-width="1.8" d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="ceu" id="ceu" aria-hidden="true"></div>
+
   <header class="topo">
-    <div class="linha-topo">
-      <h1>Centelha</h1>
-      <span id="estado" class="estado" role="status" aria-live="polite"></span>
-    </div>
-    <p id="hoje-extenso" class="hoje-extenso"></p>
+    <p class="marca"><svg class="faisca" aria-hidden="true"><use href="#i-faisca"/></svg>Centelha</p>
+    <span id="estado" class="estado" role="status" aria-live="polite"></span>
+    <button class="icone-btn" id="ouvir-tela" type="button" aria-label="Ouvir esta tela" hidden><svg><use href="#i-ouvir"/></svg></button>
+    <button class="icone-btn" id="abrir-ajustes" type="button" aria-label="Do seu jeito: tema, cor, letra e movimento"><svg><use href="#i-engrenagem"/></svg></button>
   </header>
 
   <main id="principal">
-    <section id="tela-entrar" class="tela" hidden>
-      <h2>Entrar</h2>
-      <p>O Centelha guarda as suas tarefas na sua conta. Entre com o Google para ver as suas.</p>
-      <button id="entrar" class="principal grande" type="button">Entrar com Google</button>
+    <section id="tela-entrar" class="tela entrar" hidden>
+      <svg class="faisca-grande" aria-hidden="true"><use href="#i-faisca"/></svg>
+      <h1>Vamos acender o seu dia?</h1>
+      <p class="data">Suas tarefas, suas ideias, sua luz.</p>
+      <button id="entrar" class="btn grande" type="button">Entrar com Google</button>
       <p id="erro-entrar" class="erro" hidden></p>
     </section>
 
-    <section id="tela-app" class="tela" hidden>
-      <form id="anotar" class="anotar" autocomplete="off">
-        <label for="texto-anotar" class="rotulo">Anotar</label>
-        <div class="linha-anotar">
-          <input id="texto-anotar" type="text" enterkeyhint="done" placeholder="Ex.: ligar para o contador amanhã">
-          <button type="submit" class="principal">Anotar</button>
-        </div>
-        <p id="previa" class="previa" aria-live="polite"></p>
-      </form>
-
-      <div id="lista"></div>
-    </section>
+    <section id="tela-hoje" class="tela" hidden aria-labelledby="titulo-hoje"></section>
+    <section id="tela-semana" class="tela" hidden aria-labelledby="titulo-semana"></section>
+    <section id="tela-caixa" class="tela" hidden aria-labelledby="titulo-caixa"></section>
+    <section id="tela-diario" class="tela" hidden aria-labelledby="titulo-diario"></section>
+    <section id="tela-tarefa" class="tela" hidden aria-label="Tarefa"></section>
   </main>
 
-  <nav id="abas" class="abas" hidden>
-    <button type="button" data-aba="hoje" aria-pressed="true">Hoje</button>
-    <button type="button" data-aba="caixa" aria-pressed="false">Caixa de entrada</button>
-    <button type="button" id="ouvir-tela" aria-label="Ouvir esta tela">🔊 Ouvir</button>
+  <nav class="abas" id="abas" aria-label="Telas" hidden>
+    <div class="trilho">
+      <span class="luzinha" id="luzinha"></span>
+      <button class="aba" type="button" data-aba="hoje" aria-current="page"><svg aria-hidden="true"><use href="#i-hoje"/></svg>Hoje</button>
+      <button class="aba" type="button" data-aba="semana"><svg aria-hidden="true"><use href="#i-semana"/></svg>Semana</button>
+      <button class="aba" type="button" data-aba="caixa"><svg aria-hidden="true"><use href="#i-caixa"/></svg>Caixa</button>
+      <button class="aba" type="button" data-aba="diario"><svg aria-hidden="true"><use href="#i-diario"/></svg>Diário</button>
+    </div>
   </nav>
 
-  <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
+  <div class="recado" id="recado" role="status" aria-live="polite" hidden><span id="recado-texto"></span><button id="recado-desfazer" type="button">Desfazer</button></div>
+  <div class="veu" id="veu" hidden></div>
+
+  <div class="folha" id="folha-travei" role="dialog" aria-modal="true" aria-labelledby="titulo-travei" hidden></div>
+
+  <div class="folha" id="folha-ajustes" role="dialog" aria-modal="true" aria-labelledby="titulo-ajustes" hidden>
+    <div class="miolo ajuste">
+      <div class="alca"></div>
+      <h2 id="titulo-ajustes" style="font-size:1.9rem">Do seu jeito</h2>
+      <h3>Movimento</h3>
+      <div class="segmento" id="seg-movimento"><span class="marcador"></span>
+        <button type="button" data-v="vivo">Vivo</button><button type="button" data-v="calmo">Calmo</button><button type="button" data-v="parado">Parado</button></div>
+      <p class="ajuda">Vivo: tudo responde ao seu toque. Calmo: mais curto. Parado: nada se mexe.</p>
+      <h3>Tema</h3>
+      <div class="segmento" id="seg-tema"><span class="marcador"></span>
+        <button type="button" data-v="claro">Claro</button><button type="button" data-v="escuro">Escuro</button><button type="button" data-v="auto">Automático</button></div>
+      <p class="ajuda">Automático: claro de dia, escuro à noite.</p>
+      <h3>Cor da sua luz</h3>
+      <div class="cores" id="cores"></div>
+      <h3>Letra do texto</h3>
+      <div class="segmento" id="seg-letra"><span class="marcador"></span>
+        <button type="button" data-v="atkinson">Atkinson</button><button type="button" data-v="lexend" style="font-family:Lexend,system-ui">Lexend</button><button type="button" data-v="aparelho" style="font-family:system-ui">Do aparelho</button></div>
+      <div class="campo"><label for="tamanho"><span>Tamanho da letra</span></label><input id="tamanho" type="range" min="90" max="130" step="5" value="100"></div>
+      <label class="chave" for="vibrar"><span>Vibrar ao acender (só Android)</span><input id="vibrar" type="checkbox"></label>
+      <h3>Seus dados</h3>
+      <button class="btn claro grande" id="exportar" type="button">Exportar tudo (arquivo)</button>
+      <p class="ajuda">Um arquivo com todas as suas tarefas, passos, diário e "Travei". Guarde no SSD ou no Drive.</p>
+      <button class="btn claro grande" id="sair" type="button">Sair da conta</button>
+      <button class="btn grande" id="fechar-ajustes" type="button">Pronto</button>
+    </div>
+  </div>
+
+  <div class="momento" id="momento" role="dialog" aria-modal="true" aria-labelledby="momento-palavra" hidden></div>
 </body>
 </html>
