@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Centelha</title>
+  <meta name="description" content="Tarefas, ideias e segundo cérebro de Rafael Yazigi.">
+  <meta name="theme-color" content="#1f4a3c">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icones/icone-192.png">
+  <link rel="apple-touch-icon" href="icones/icone-192.png">
+  <link rel="stylesheet" href="estilo.css">
+  <script src="vendor/supabase-2.117.2.js" defer></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="linha-topo">
+      <h1>Centelha</h1>
+      <span id="estado" class="estado" role="status" aria-live="polite"></span>
+    </div>
+    <p id="hoje-extenso" class="hoje-extenso"></p>
+  </header>
+
+  <main id="principal">
+    <section id="tela-entrar" class="tela" hidden>
+      <h2>Entrar</h2>
+      <p>O Centelha guarda as suas tarefas na sua conta. Entre com o Google para ver as suas.</p>
+      <button id="entrar" class="principal grande" type="button">Entrar com Google</button>
+      <p id="erro-entrar" class="erro" hidden></p>
+    </section>
+
+    <section id="tela-app" class="tela" hidden>
+      <form id="anotar" class="anotar" autocomplete="off">
+        <label for="texto-anotar" class="rotulo">Anotar</label>
+        <div class="linha-anotar">
+          <input id="texto-anotar" type="text" enterkeyhint="done" placeholder="Ex.: ligar para o contador amanhã">
+          <button type="submit" class="principal">Anotar</button>
+        </div>
+        <p id="previa" class="previa" aria-live="polite"></p>
+      </form>
+
+      <div id="lista"></div>
+    </section>
+  </main>
+
+  <nav id="abas" class="abas" hidden>
+    <button type="button" data-aba="hoje" aria-pressed="true">Hoje</button>
+    <button type="button" data-aba="caixa" aria-pressed="false">Caixa de entrada</button>
+    <button type="button" id="ouvir-tela" aria-label="Ouvir esta tela">🔊 Ouvir</button>
+  </nav>
+
+  <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
