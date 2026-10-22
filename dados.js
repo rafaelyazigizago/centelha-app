@@ -114,6 +114,19 @@ export async function marcarMidia(id, removida) {
 }
 
 // Exportar tudo o que é seu, num arquivo só (o Supabase grátis não faz cópia sozinho).
+// O pet: manda a conversa para a função "agente" do Supabase (que lê as tarefas com o seu login e pergunta ao DeepSeek).
+export async function conversar(mensagens, hoje) {
+  const corpo = { mensagens: mensagens.filter((m) => !m.erro).map(({ role, content }) => ({ role, content })), hoje };
+  const { data, error } = await banco.functions.invoke('agente', { body: corpo });
+  if (error) {
+    const e = new Error(error.message || 'a função agente falhou');
+    try { if ((await error.context?.json?.())?.erro === 'sem_chave') e.semChave = true; } catch { /* resposta sem corpo */ }
+    throw e;
+  }
+  if (!data?.resposta) throw new Error('a função agente não respondeu');
+  return data;
+}
+
 export async function exportarTudo(espacoId, usuarioId) {
   const tarefas = exigir(await banco.from('tarefas').select('*').eq('espaco_id', espacoId).order('criado_em', { ascending: true }));
   const ids = new Set(tarefas.map((t) => t.id));

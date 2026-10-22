@@ -70,6 +70,7 @@ export function alternarFeita(t, botao) {
     estado.recem = t.id;   // a lâmpada nova nasce acendendo (a tela é redesenhada)
     if (botao) fagulhas(botao);
     vibrar();
+    document.dispatchEvent(new CustomEvent('centelha:acendeu'));   // o pet acende junto
     return mudar(t, { estado: 'feita', feita_em: new Date().toISOString() }, {
       mensagem: `Acesa · ${t.titulo}`, desfazer: { estado: 'aberta', feita_em: null, feita_por: null },
     });

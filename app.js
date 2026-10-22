@@ -13,6 +13,7 @@ import { desenharMenu, ligarMenu } from './menu.js';
 import { aoAbrirTarefaPelasAcoes, abrirMover, alternarEstrela, limparSelecao, selecao } from './acoes.js';
 import { alternarFeita, moverPara } from './estado.js';
 import * as preferencias from './preferencias.js';
+import { ligarPet, mostrarPet, abrirConversa } from './pet.js';
 import { $, el, mostrarEstado, avisar, fecharAviso, ligarAviso, abrirFolha, fecharFolha, folhaAtual, ouvir, reiniciar, movimento } from './ui.js';
 
 const ABAS = ['hoje', 'semana', 'grupos', 'caixa', 'diario'];
@@ -114,6 +115,7 @@ function mostrarEntrar() {
   for (const nome of TELAS) $(`tela-${nome}`).hidden = true;
   estado.painel = null;
   document.body.classList.remove('logado', 'com-painel');
+  mostrarPet(false);
   $('tela-entrar').hidden = false;
   $('abas').hidden = true;
   $('ouvir-tela').hidden = true;
@@ -138,6 +140,7 @@ async function entrar(usuario) {
   $('tela-entrar').hidden = true;
   $('abas').hidden = false;
   document.body.classList.add('logado');
+  mostrarPet(true);
   mostrarEstado('Carregando…');
   try {
     estado.espacoId = await dados.espacoPessoal(usuario.id);
@@ -204,7 +207,7 @@ async function exportar() {
 }
 
 // ---------- Atalhos de teclado (no jeito do Microsoft To Do) ----------
-// Valem fora dos campos de texto: N nova tarefa · D ou Ctrl+D concluir · E estrela · H trazer para hoje · M mover.
+// Valem fora dos campos de texto: C conversar com a Centelha (o pet) · N nova tarefa · D ou Ctrl+D concluir · E estrela · H trazer para hoje · M mover.
 // D, E, H e M agem na tarefa aberta; M também nas escolhidas. Ctrl+N e Ctrl+T o navegador não deixa usar.
 function atalho(e) {
   if (!estado.usuario || e.altKey || e.metaKey || momentoAberto() || folhaAtual()) return;
@@ -214,7 +217,8 @@ function atalho(e) {
   if (e.ctrlKey && tecla !== 'd') return;
   const t = tarefaAberta();
   const fazer = (f) => { e.preventDefault(); f(); };
-  if (tecla === 'n') fazer(() => {
+  if (tecla === 'c') fazer(abrirConversa);   // C chama o pet
+  else if (tecla === 'n') fazer(() => {
     const campo = $('adicionar-tarefa') && !$('tela-lista').hidden ? $('adicionar-tarefa') : null;
     if (campo) campo.focus(); else { if (estado.aba !== 'hoje') irPara('hoje'); setTimeout(() => $('texto-anotar')?.focus(), 50); }
   });
@@ -237,6 +241,7 @@ function ouvirTela() {
 function ligar() {
   preferencias.ligar();
   ligarAviso();
+  ligarPet();
   $('entrar').addEventListener('click', pedirLogin);
   $('ouvir-tela').addEventListener('click', ouvirTela);
   $('abrir-ajustes').addEventListener('click', () => abrirFolha('folha-ajustes'));
