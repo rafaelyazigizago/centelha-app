@@ -34,6 +34,8 @@ let passoRecem = null;
 let rascunhoTravei = null;
 let voltar = () => {};
 let nomeVolta = 'Hoje';
+let noPainel = false;   // no notebook, a tarefa abre no painel da direita (como no Microsoft To Do)
+export const tarefaAberta = () => t;
 export const aoVoltar = (f) => { voltar = f; };
 
 // Grava sem redesenhar: a tela da tarefa fica parada enquanto você escreve.
@@ -54,9 +56,10 @@ async function gravarEm(alvo, patch, { marca } = {}) {
   return true;
 }
 
-export function abrirTarefa(tarefa, volta) {
+export function abrirTarefa(tarefa, volta, { painel = false } = {}) {
   t = tarefa;
   nomeVolta = volta;
+  noPainel = painel;
   passos = null;
   desenharTarefa();
   const id = t.id;
@@ -87,7 +90,7 @@ export function textoParaOuvir() {
 // ---------- A tela ----------
 function desenharTarefa() {
   $('tela-tarefa').replaceChildren(
-    el('button', { type: 'button', classe: 'voltar', onclick: () => voltar() }, `‹ ${nomeVolta}`),
+    el('button', { type: 'button', classe: 'voltar', onclick: () => voltar() }, noPainel ? '✕ Fechar' : `‹ ${nomeVolta}`),
     tituloEditavel(),
     linhaQuando(),
     linhaLentes(),

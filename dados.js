@@ -16,6 +16,8 @@ export function iniciar() {
 }
 
 const exigir = ({ data, error }) => { if (error) throw error; return data; };
+// Gravação que não mudou nenhuma linha (as regras do banco recusaram em silêncio) vira erro, nunca "Salvo ✓".
+const mudouUma = (resposta) => { const linhas = exigir(resposta); if (!linhas?.length) throw new Error('nada foi gravado: sem permissão ou a linha não existe'); };
 
 export async function espacoPessoal(usuarioId) {
   return exigir(await banco.from('espacos').select('id').eq('tipo', 'pessoal').eq('criado_por', usuarioId).single()).id;
@@ -44,7 +46,7 @@ export async function contarPassos() {
 }
 
 export async function mudarTarefa(id, patch) {
-  exigir(await banco.from('tarefas').update(patch).eq('id', id));
+  mudouUma(await banco.from('tarefas').update(patch).eq('id', id).select('id'));
 }
 
 export async function criarTarefa(dados) {
@@ -61,7 +63,7 @@ export async function criarPasso(tarefaId, texto, ordem) {
 }
 
 export async function mudarPasso(id, patch) {
-  exigir(await banco.from('subtarefas').update(patch).eq('id', id));
+  mudouUma(await banco.from('subtarefas').update(patch).eq('id', id).select('id'));
 }
 
 export async function registrarTravada(dados) {
@@ -79,7 +81,7 @@ export async function diarioAnteriores(usuarioId, antesDe) {
 }
 
 export async function salvarDiario(id, dia, texto) {
-  if (id) { exigir(await banco.from('diario').update({ texto }).eq('id', id)); return id; }
+  if (id) { mudouUma(await banco.from('diario').update({ texto }).eq('id', id).select('id')); return id; }
   return exigir(await banco.from('diario').insert({ dia, texto }).select('id').single()).id;
 }
 
@@ -108,7 +110,7 @@ export async function baixarMidia(caminho) {
 }
 
 export async function marcarMidia(id, removida) {
-  exigir(await banco.from('diario_midias').update({ removida }).eq('id', id));
+  mudouUma(await banco.from('diario_midias').update({ removida }).eq('id', id).select('id'));
 }
 
 // Exportar tudo o que é seu, num arquivo só (o Supabase grátis não faz cópia sozinho).

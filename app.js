@@ -5,21 +5,31 @@ import { segundaDaSemana } from './calculos.js';
 import * as dados from './dados.js';
 import { estado, aoMudar, fixarSecoes, falha } from './estado.js';
 import { desenharHoje, desenharSemana, desenharCaixa, aoAbrirTarefa } from './telas.js';
-import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto } from './tela-tarefa.js';
+import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto, tarefaAberta } from './tela-tarefa.js';
 import { desenharDiario, salvarAgora, esquecerDiario, pararDeOuvir } from './tela-diario.js';
-import { desenharGrupos } from './tela-grupos.js';
+import { desenharGrupos, aoAbrirLista } from './tela-grupos.js';
+import { abrirLista as prepararLista, desenharLista } from './tela-lista.js';
+import { desenharMenu, ligarMenu } from './menu.js';
+import { aoAbrirTarefaPelasAcoes, abrirMover, alternarEstrela, limparSelecao, selecao } from './acoes.js';
+import { alternarFeita, moverPara } from './estado.js';
 import * as preferencias from './preferencias.js';
 import { $, el, mostrarEstado, avisar, fecharAviso, ligarAviso, abrirFolha, fecharFolha, folhaAtual, ouvir, reiniciar, movimento } from './ui.js';
 
 const ABAS = ['hoje', 'semana', 'grupos', 'caixa', 'diario'];
-const NOMES = { hoje: 'Hoje', semana: 'Semana', grupos: 'Grupos', caixa: 'Caixa', diario: 'Diário' };
+const TELAS = [...ABAS, 'lista', 'tarefa'];
+const NOMES = { hoje: 'Hoje', semana: 'Semana', grupos: 'Grupos', caixa: 'Caixa', diario: 'Diário', lista: 'Lista' };
+// No notebook (tela larga), o formato do Microsoft To Do: menu lateral, lista e a tarefa no painel da direita.
+const largo = matchMedia('(min-width: 1000px)');
 const RECARREGAR_DEPOIS_MS = 30 * 60 * 1000;
 let abaDeVolta = 'hoje';
 
 // ---------- Desenhar a tela atual ----------
 function desenharAtual(entrando = false) {
+  desenharMenu();
+  if (estado.painel) atualizarTarefa();
   if (estado.aba === 'tarefa') { atualizarTarefa(); return; }
   if (estado.aba === 'hoje') desenharHoje();
+  else if (estado.aba === 'lista') desenharLista();
   else if (estado.aba === 'semana') desenharSemana(entrando);
   else if (estado.aba === 'grupos') desenharGrupos();
   else if (estado.aba === 'caixa') desenharCaixa();
@@ -31,8 +41,9 @@ aoMudar(() => desenharAtual(false));
 function irPara(aba, { deLado = false } = {}) {
   if (estado.aba === 'diario' && aba !== 'diario') { pararDeOuvir(); salvarAgora(); }
   if (estado.aba === 'tarefa' && aba !== 'tarefa') fecharTarefa();
+  if (aba !== estado.aba) { limparSelecao(); fecharPainel(); }
   estado.aba = aba;
-  for (const nome of [...ABAS, 'tarefa']) $(`tela-${nome}`).hidden = nome !== aba;
+  for (const nome of TELAS) if (!(nome === 'tarefa' && estado.painel)) $(`tela-${nome}`).hidden = nome !== aba;
   const tela = $(`tela-${aba}`);
   tela.classList.remove('ativa', 'de-lado');
   void tela.offsetWidth;
@@ -49,17 +60,60 @@ function irPara(aba, { deLado = false } = {}) {
   window.scrollTo({ top: 0, behavior: movimento() === 'vivo' ? 'smooth' : 'auto' });
 }
 
-aoAbrirTarefa((t) => {
-  if (estado.aba !== 'tarefa') abaDeVolta = estado.aba;
+function abrirNaTela(t) {
   fecharAviso();
+  if (largo.matches) {   // notebook: a lista fica, a tarefa abre à direita
+    estado.painel = t.id;
+    document.body.classList.add('com-painel');
+    abrirTarefa(t, NOMES[estado.aba] || 'Hoje', { painel: true });
+    const painel = $('tela-tarefa');
+    painel.hidden = false;
+    reiniciar(painel, 'ativa');
+    desenharAtual(false);
+    return;
+  }
+  if (estado.aba !== 'tarefa') abaDeVolta = estado.aba;
   abrirTarefa(t, NOMES[abaDeVolta]);
   irPara('tarefa', { deLado: true });
-});
-aoVoltar(() => irPara(abaDeVolta));
+}
+function fecharPainel() {
+  if (!estado.painel) return;
+  estado.painel = null;
+  document.body.classList.remove('com-painel');
+  $('tela-tarefa').hidden = true;
+  fecharTarefa();
+  desenharAtual(false);
+}
+aoAbrirTarefa(abrirNaTela);
+aoAbrirTarefaPelasAcoes(abrirNaTela);
+aoVoltar(() => (estado.painel ? fecharPainel() : irPara(abaDeVolta)));
+
+// Abrir uma lista (subgrupo, área ou Prioridades) a partir do menu lateral ou da aba Grupos.
+function abrirLista(tipo, area = null, subgrupo = null) {
+  fecharPainel();
+  limparSelecao();
+  prepararLista(tipo, area, subgrupo);
+  NOMES.lista = tipo === 'prioridades' ? 'Prioridades' : (tipo === 'area' ? area : (subgrupo ?? 'Sem subgrupo'));
+  irPara('lista');
+}
+ligarMenu((aba) => irPara(aba), abrirLista);
+aoAbrirLista(abrirLista);
+
+// Tela larga ↔ estreita no meio do uso: a tarefa aberta muda de lugar sem se perder.
+function ajustarAoTamanho() {
+  if (!estado.usuario) return;
+  const t = tarefaAberta();
+  if (!largo.matches && estado.painel && t) { fecharPainel(); abrirNaTela(t); }
+  else if (largo.matches && estado.aba === 'tarefa' && t) { irPara(abaDeVolta); abrirNaTela(t); }
+}
+largo.addEventListener('change', ajustarAoTamanho);
+window.addEventListener('resize', ajustarAoTamanho);   // reserva: nem todo navegador avisa a troca pelo "change"
 
 // ---------- Entrar ----------
 function mostrarEntrar() {
-  for (const nome of [...ABAS, 'tarefa']) $(`tela-${nome}`).hidden = true;
+  for (const nome of TELAS) $(`tela-${nome}`).hidden = true;
+  estado.painel = null;
+  document.body.classList.remove('logado', 'com-painel');
   $('tela-entrar').hidden = false;
   $('abas').hidden = true;
   $('ouvir-tela').hidden = true;
@@ -83,6 +137,7 @@ async function entrar(usuario) {
   estado.usuario = usuario;
   $('tela-entrar').hidden = true;
   $('abas').hidden = false;
+  document.body.classList.add('logado');
   mostrarEstado('Carregando…');
   try {
     estado.espacoId = await dados.espacoPessoal(usuario.id);
@@ -116,6 +171,8 @@ async function recarregar() {
   const diaAntes = estado.hoje;
   if (!(await carregar())) return;
   if (estado.hoje !== diaAntes) esquecerDiario();
+  if (estado.painel) fecharPainel();
+  if (estado.lista) prepararLista(estado.lista.tipo, estado.lista.area, estado.lista.subgrupo);
   if (estado.aba === 'tarefa') irPara(abaDeVolta);
   else desenharAtual(false);
 }
@@ -146,6 +203,27 @@ async function exportar() {
   } catch (erro) { falha(erro); }
 }
 
+// ---------- Atalhos de teclado (no jeito do Microsoft To Do) ----------
+// Valem fora dos campos de texto: N nova tarefa · D ou Ctrl+D concluir · E estrela · H trazer para hoje · M mover.
+// D, E, H e M agem na tarefa aberta; M também nas escolhidas. Ctrl+N e Ctrl+T o navegador não deixa usar.
+function atalho(e) {
+  if (!estado.usuario || e.altKey || e.metaKey || momentoAberto() || folhaAtual()) return;
+  const alvo = e.target;
+  if (alvo.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+  const tecla = e.key.toLowerCase();
+  if (e.ctrlKey && tecla !== 'd') return;
+  const t = tarefaAberta();
+  const fazer = (f) => { e.preventDefault(); f(); };
+  if (tecla === 'n') fazer(() => {
+    const campo = $('adicionar-tarefa') && !$('tela-lista').hidden ? $('adicionar-tarefa') : null;
+    if (campo) campo.focus(); else { if (estado.aba !== 'hoje') irPara('hoje'); setTimeout(() => $('texto-anotar')?.focus(), 50); }
+  });
+  else if (tecla === 'd' && t) fazer(() => alternarFeita(t));
+  else if (tecla === 'e' && t) fazer(() => alternarEstrela(t));
+  else if (tecla === 'h' && t && t.dia !== estado.hoje) fazer(() => moverPara(t, estado.hoje));
+  else if (tecla === 'm' && (selecao.size || t)) fazer(() => abrirMover(selecao.size ? [...selecao].map((id) => estado.tarefas.find((x) => x.id === id)).filter(Boolean) : [t]));
+}
+
 // ---------- Ouvir a tela ----------
 function ouvirTela() {
   if (estado.aba === 'tarefa') { ouvir(textoParaOuvir()); return; }
@@ -168,10 +246,15 @@ function ligar() {
   document.querySelectorAll('#abas .aba').forEach((b) => b.addEventListener('click', () => irPara(b.dataset.aba)));
 
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-    if (momentoAberto()) fecharMomento(true);
-    else if (folhaAtual()) fecharFolha();
-    else if (estado.aba === 'tarefa') irPara(abaDeVolta);
+    if (e.key === 'Escape') {
+      if (momentoAberto()) fecharMomento(true);
+      else if (folhaAtual()) fecharFolha();
+      else if (estado.selecionando) limparSelecao();
+      else if (estado.painel) fecharPainel();
+      else if (estado.aba === 'tarefa') irPara(abaDeVolta);
+      return;
+    }
+    atalho(e);
   });
   window.addEventListener('offline', () => mostrarEstado('Sem internet: o que mudar agora não salva', true));
   window.addEventListener('online', () => mostrarEstado('Conectado'));

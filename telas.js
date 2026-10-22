@@ -3,6 +3,7 @@ import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
 import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
+import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
 
 const PARTES = [['manha', 'manhã'], ['almoco', 'almoço'], ['tarde', 'tarde'], ['noite', 'noite'], [null, 'a qualquer hora']];
 const LENTES = [['dinheiro', 'Dinheiro'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];
@@ -11,11 +12,14 @@ let abrirTarefa = () => {};
 export const aoAbrirTarefa = (f) => { abrirTarefa = f; };
 const visiveis = (t) => t.estado !== 'cancelada';
 
-// ---------- Uma tarefa: a lâmpada, o título, o porquê e um botão de um toque ----------
-export function linhaTarefa(t, { umToque, semGrupo } = {}) {
+// ---------- Uma tarefa: a lâmpada, o título, o porquê, a linha de detalhes e os botões ----------
+// Como no Microsoft To Do: estrela à direita (opcional), ⋯ ou clique direito abre as ações, Shift+clique escolhe várias.
+export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
   const feita = t.estado === 'feita';
   const marca = estado.marcas.get(t.id);
-  const classes = ['tarefa', feita && 'feita', marca && 'saiu', t.nova && 'entrou', estado.recem === t.id && 'recem'].filter(Boolean).join(' ');
+  const escolhida = selecao.has(t.id);
+  const classes = ['tarefa', feita && 'feita', marca && 'saiu', t.nova && 'entrou', estado.recem === t.id && 'recem',
+    escolhida && 'escolhida', estado.painel === t.id && 'no-painel'].filter(Boolean).join(' ');
   t.nova = false;
   const marcas = [];
   if (t.dia && !['hoje', 'prioridade', 'amanha'].includes(secao(t)) && !marca) marcas.push(el('span', { classe: 'marca-t' }, rotuloDia(t.dia)));
@@ -27,20 +31,33 @@ export function linhaTarefa(t, { umToque, semGrupo } = {}) {
   if (!semGrupo && (t.area || t.subgrupo)) marcas.push(el('span', { classe: 'marca-t' }, [t.area, t.subgrupo].filter(Boolean).join(' › ')));
   if (marca) marcas.push(el('span', { classe: 'marca-t aviso' }, marca));
 
-  return el('div', { classe: classes, 'data-id': t.id },
+  return el('div', { classe: classes, 'data-id': t.id, oncontextmenu: (e) => { e.preventDefault(); abrirAcoes(t); } },
     el('button', {
       type: 'button', classe: 'botao-lamp', 'aria-pressed': String(feita), 'data-mantem-aviso': true,
       'aria-label': `${feita ? 'Feita' : 'Marcar como feita'}: ${t.titulo}`, html: lampada(feita),
       onclick: (e) => alternarFeita(t, e.currentTarget),
     }),
-    el('button', { type: 'button', classe: 'texto', 'aria-label': `Abrir: ${t.titulo}`, onclick: () => abrirTarefa(t) },
+    el('button', {
+      type: 'button', classe: 'texto', 'aria-label': `${estado.selecionando ? (escolhida ? 'Desmarcar' : 'Escolher') : 'Abrir'}: ${t.titulo}`,
+      'aria-pressed': estado.selecionando ? String(escolhida) : null, 'data-mantem-aviso': estado.selecionando || null,
+      onclick: (e) => (e.shiftKey || estado.selecionando ? alternarSelecao(t) : abrirTarefa(t)),
+    },
       el('span', { classe: 'titulo-t' }, t.titulo),
       t.porque ? el('span', { classe: 'porque', html: `${icone('faisca')}<span></span>` }) : null,
       marcas.length ? el('span', { classe: 'marcas' }, marcas) : null),
-    umToque && !feita ? el('button', {
+    umToque && !feita && !estado.selecionando ? el('button', {
       type: 'button', classe: 'pilula um-toque', 'data-mantem-aviso': true,
       onclick: () => moverPara(t, umToque === 'Amanhã' ? somarDias(estado.hoje, 1) : estado.hoje),
     }, umToque) : null,
+    estrela ? el('button', {
+      type: 'button', classe: 'icone-btn leve estrela', 'aria-pressed': String(!!t.prioridade_semana), 'data-mantem-aviso': true,
+      'aria-label': `${t.prioridade_semana ? 'Tirar a estrela' : 'Pôr estrela'}: ${t.titulo}`, html: icone('estrela'),
+      onclick: () => alternarEstrela(t),
+    }) : null,
+    el('button', {
+      type: 'button', classe: 'icone-btn leve mais', 'aria-label': `Mais ações: ${t.titulo}`, 'aria-haspopup': 'dialog',
+      onclick: () => abrirAcoes(t),
+    }, '⋯'),
   );
 }
 function comPorque(no, t) {

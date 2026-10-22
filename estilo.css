@@ -321,6 +321,61 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 @keyframes pulo { 0% { transform: translateY(0); } 40% { transform: translateY(-6px) scale(1.1); } 100% { transform: none; } }
 @keyframes vela { 0%, 100% { transform: scale(1) rotate(0); opacity: .8; } 30% { transform: scale(1.06) rotate(-4deg); opacity: 1; } 60% { transform: scale(.96) rotate(3deg); opacity: .85; } }
 
+/* ---------- Formato Microsoft To Do (Fase A) ---------- */
+/* Botões dentro do cartão: estrela e ⋯ */
+.icone-btn.leve { width: 44px; height: 44px; border: 0; background: transparent; border-radius: 12px; font-size: 1.4rem; line-height: 1; color: var(--suave); }
+.icone-btn.leve:hover { background: color-mix(in srgb, var(--luz) 14%, transparent); }
+.icone-btn.estrela svg { width: 22px; height: 22px; }
+.icone-btn.estrela[aria-pressed="true"] { color: var(--luz-sombra); --estrela-preenche: var(--luz); }
+:root[data-tema="noite"] .icone-btn.estrela[aria-pressed="true"] { color: var(--luz); }
+.estrela-titulo { width: 30px; height: 30px; vertical-align: -3px; margin-right: 8px; color: var(--luz-sombra); --estrela-preenche: var(--luz); }
+.tarefa.escolhida { border-color: var(--luz); box-shadow: 0 3px 0 var(--luz-sombra); background: color-mix(in srgb, var(--luz) 14%, var(--cartao)); }
+.tarefa.no-painel { border-color: var(--luz); box-shadow: 0 3px 0 var(--luz-sombra); }
+
+/* Barra das escolhidas */
+.barra-selecao { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 16;
+  width: min(36rem, calc(100% - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 18px;
+  background: var(--cartao); border: 1.5px solid var(--luz); box-shadow: 0 6px 24px rgba(0, 0, 0, .18); }
+.barra-selecao .btn { min-height: 46px; padding: 0 14px; font-size: 1rem; }
+.barra-conta { flex: 1 1 100%; font-weight: 700; font-size: 1rem; }
+
+/* Menu lateral: só no notebook (tela larga) e com login */
+.menu-lateral { display: none; }
+.menu-item { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: 12px;
+  background: transparent; color: var(--tinta); text-align: left; font-size: 1rem; }
+.menu-item:hover { background: color-mix(in srgb, var(--luz) 12%, transparent); }
+.menu-item[aria-current="page"] { background: color-mix(in srgb, var(--luz) 28%, transparent); font-weight: 700; }
+.menu-item svg { width: 20px; height: 20px; flex: none; }
+.menu-item .menu-nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu-item .n { color: var(--suave); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.menu-titulo { margin: 16px 12px 4px; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
+.menu-linha { display: flex; align-items: center; }
+.menu-seta { width: 32px; height: 44px; flex: none; border: 0; background: transparent; color: var(--suave); font-size: 1.2rem; transition: transform calc(.25s * var(--t)); }
+.menu-grupo.aberto .menu-seta { transform: rotate(90deg); }
+.menu-sub { padding-left: 44px; min-height: 40px; font-size: .95rem; }
+.menu-nova { margin-top: 10px; color: var(--suave); font-weight: 700; }
+.menu-marca { margin: 4px 12px 14px; }
+
+@media (max-width: 999px) {
+  /* No celular, a estrela aparece só na tarefa que já tem; pôr e tirar fica no ⋯ (cartão com espaço para o título). */
+  .tarefa .estrela:not([aria-pressed="true"]) { display: none; }
+  .gaveta .miolo-dobra { padding: 0 8px 10px; }
+  .dobra .dobra .miolo-dobra { padding: 0 4px 8px; }
+}
+@media (min-width: 1000px) {
+  body.logado { padding-left: calc(300px + 32px); padding-bottom: 48px; }
+  body.logado .abas { display: none; }
+  body.logado .menu-lateral { display: flex; flex-direction: column; gap: 2px; position: fixed; z-index: 5; left: 0; top: 0; bottom: 0; width: 300px;
+    overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 12px 24px max(12px, env(safe-area-inset-left));
+    background: var(--cartao); border-right: 1px solid var(--linha); }
+  body.logado .topo .marca { visibility: hidden; }
+  body.com-painel { padding-right: calc(460px + 32px); }
+  body.com-painel #tela-tarefa { position: fixed; z-index: 6; right: 0; top: 0; bottom: 0; width: 460px; overflow-y: auto;
+    padding: 16px 24px 24px; background: var(--fundo); border-left: 1px solid var(--linha); box-shadow: -8px 0 24px rgba(0, 0, 0, .06); }
+  body.com-painel #tela-tarefa .acoes-fixas { bottom: 0; }
+  body.logado .recado, body.logado .barra-selecao { bottom: 24px; }
+}
+
 /* Níveis de movimento (Do seu jeito) */
 body.mov-calmo { --t: .6; }
 body.mov-parado *, body.mov-parado *::before, body.mov-parado *::after { animation: none !important; transition: none !important; }

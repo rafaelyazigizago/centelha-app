@@ -2,18 +2,20 @@
 // Cada área e cada subgrupo é uma dobra. A área aberta mostra os seus subgrupos; "Abrir todos" mostra todas as tarefas dela.
 // Entram as tarefas abertas ao carregar (e as anotadas depois): a feita fica no lugar, riscada, até recarregar.
 import { agruparPorArea } from './calculos.js';
-import { estado, secao, anotar } from './estado.js';
+import { estado, anotar, lugar } from './estado.js';
 import { dobra, linha } from './telas.js';
 import { $, el } from './ui.js';
 
 const abertas = new Set();   // dobras que a pessoa abriu
+let abrirLista = () => {};
+export const aoAbrirLista = (f) => { abrirLista = f; };
 const chaveArea = (area) => `g|${area ?? ''}`;
 const chaveSub = (area, sub) => `g|${area ?? ''}|${sub ?? ''}`;
 
 export function desenharGrupos() {
   const tela = $('tela-grupos');
   const tarefas = estado.tarefas.filter((t) => t.estado !== 'cancelada' && estado.abertasNoInicio.has(t.id));
-  const grupos = agruparPorArea(tarefas);
+  const grupos = agruparPorArea(tarefas, lugar);   // a tarefa movida fica no lugar, com a marca, até recarregar
   tela.replaceChildren(
     el('h1', { id: 'titulo-grupos' }, 'Grupos'),
     el('p', { classe: 'data' }, 'Cada área com os seus subgrupos. Toque para abrir.'),
@@ -41,9 +43,9 @@ function cartaoArea(g) {
 
 function cartaoSubgrupo(area, s) {
   const nome = s.nome ?? 'Sem subgrupo';
-  const hoje = estado.hoje;
   return dobra(chaveSub(area, s.nome), nome, s.total, [
-    el('div', { classe: 'lista' }, s.tarefas.map((t) => linha(t, { semGrupo: true, umToque: secao(t) === 'hoje' || t.dia === hoje ? 'Amanhã' : 'Hoje' }))),
+    el('div', { classe: 'fileira' }, el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('sub', area, s.nome) }, 'Abrir como lista')),
+    el('div', { classe: 'lista' }, s.tarefas.map((t) => linha(t, { semGrupo: true, estrela: true }))),
     anotarAqui(area, s.nome, nome),
   ], abertas, 'subgrupo');
 }

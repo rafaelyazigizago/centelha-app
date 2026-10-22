@@ -67,10 +67,11 @@ export function feitasNaSemana(tarefas, hoje) {
 
 // Grupos (aba "Grupos", no jeito do Microsoft To Do): Área → subgrupo → tarefas.
 // Áreas e subgrupos com mais tarefas primeiro; "sem área" e "sem subgrupo" por último; tarefas por dia, depois por criação.
-export function agruparPorArea(tarefas) {
+// "onde" diz a área e o subgrupo de cada tarefa (padrão: os da própria tarefa).
+export function agruparPorArea(tarefas, onde = (t) => t) {
   const porArea = new Map();
   for (const t of tarefas) {
-    const area = t.area || null, sub = t.subgrupo || null;
+    const area = onde(t).area || null, sub = onde(t).subgrupo || null;
     if (!porArea.has(area)) porArea.set(area, new Map());
     const subs = porArea.get(area);
     if (!subs.has(sub)) subs.set(sub, []);

@@ -17,6 +17,10 @@ export const estado = {
   recem: null,         // id da lâmpada que acabou de acender
   passos: new Map(),   // id da tarefa → { total, feitos }
   abertasNoInicio: new Set(),   // as abertas ao carregar: ficam na aba Grupos mesmo depois de feitas
+  lugares: new Map(),  // id → { area, subgrupo } ao carregar: a tarefa movida fica no lugar, com a marca, até recarregar
+  lista: null,         // a lista aberta (subgrupo, área ou Prioridades)
+  selecionando: false, // modo de escolher várias tarefas
+  painel: null,        // no notebook: id da tarefa aberta no painel da direita
   carregadoEm: 0,
 };
 
@@ -28,9 +32,11 @@ export function fixarSecoes() {
   estado.hoje = hojeISO();
   estado.secoes = new Map(estado.tarefas.map((t) => [t.id, secaoDe(t, estado.hoje)]));
   estado.abertasNoInicio = new Set(estado.tarefas.filter((t) => t.estado === 'aberta').map((t) => t.id));
+  estado.lugares = new Map(estado.tarefas.map((t) => [t.id, { area: t.area || null, subgrupo: t.subgrupo || null }]));
   estado.marcas.clear();
 }
 export const secao = (t) => estado.secoes.get(t.id) ?? secaoDe(t, estado.hoje);
+export const lugar = (t) => estado.lugares.get(t.id) ?? { area: t.area || null, subgrupo: t.subgrupo || null };
 
 function falhou(erro) {
   console.error(erro);
@@ -105,7 +111,7 @@ export async function recomecar(lista) {
 
 // Anotar: "amanhã", "sexta", "24/10" viram o dia; "#casa" vira etiqueta; sem dia vai para a Caixa.
 // "extra" leva a área e o subgrupo quando se anota dentro de um grupo.
-export async function anotar(texto, ignorarData, extra = {}) {
+export async function anotar(texto, ignorarData, extra = {}, aoCriar) {
   const lido = interpretar(texto);
   const dia = ignorarData ? null : lido.dia;
   const titulo = ignorarData ? texto.replace(/(^|\s)#[\p{L}\p{N}_-]+/gu, ' ').replace(/\s+/g, ' ').trim() : lido.titulo;
@@ -115,6 +121,8 @@ export async function anotar(texto, ignorarData, extra = {}) {
     const nova = await dados.criarTarefa({ espaco_id: estado.espacoId, titulo, dia, etiquetas: lido.etiquetas, ...extra });
     nova.nova = true;
     estado.abertasNoInicio.add(nova.id);
+    estado.lugares.set(nova.id, { area: nova.area || null, subgrupo: nova.subgrupo || null });
+    aoCriar?.(nova);
     estado.tarefas.unshift(nova);
     estado.secoes.set(nova.id, secaoDe(nova, estado.hoje));
     redesenhar();

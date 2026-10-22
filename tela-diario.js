@@ -48,7 +48,7 @@ export function desenharDiario() {
   };
 
   const hoje = maiuscula(diaPorExtenso(estado.hoje));
-  tela.replaceChildren(
+  tela.replaceChildren(...[   // o que não existe (null) fica de fora, senão aparece escrito "null"
     el('h1', { id: 'titulo-diario' }, 'Diário'),
     el('p', { classe: 'privado', html: `${icone('faisca', 'faisca')}<span>${hoje} · só você vê</span>` }),
     el('div', { classe: 'fileira', style: 'margin-top:12px' },
@@ -61,7 +61,7 @@ export function desenharDiario() {
     el('div', { classe: 'cartao gravando', id: 'gravando', hidden: true }),
     el('div', { classe: 'midias', id: 'midias-hoje' }, listaMidias(estado.hoje)),
     diasAnteriores(),
-  );
+  ].filter(Boolean));
   if (gravacao) mostrarPainel(gravacao);
   if (!pronto) carregar();
 }
