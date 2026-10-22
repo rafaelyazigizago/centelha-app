@@ -1,9 +1,12 @@
 // Centelha · menu lateral do notebook, no jeito do Microsoft To Do: em cima as listas fixas (Hoje, Prioridades, Semana,
 // Caixa, Diário); embaixo os Grupos (áreas) com as listas (subgrupos), que abrem e fecham; no fim, "+ Nova lista".
 // No celular ele não aparece (as abas de baixo continuam); vira gaveta na Fase C.
+// Fase B: soltar uma tarefa arrastada em Hoje (traz para hoje), Prioridades (estrela), Caixa (sem dia), num grupo ou numa lista (move).
 import { agruparPorArea } from './calculos.js';
 import { estado } from './estado.js';
 import { $, el, icone, abrirFolha, fecharFolha } from './ui.js';
+import { ligarSoltar } from './arrastar.js';
+import { trazerParaHoje, emLote, moverGrupo } from './acoes.js';
 
 let ir = () => {};
 let abrirLista = () => {};
@@ -25,12 +28,16 @@ export function desenharMenu() {
     html: `${nomeIcone ? icone(nomeIcone) : ''}<span class="menu-nome"></span>${n ? `<span class="n">${n}</span>` : ''}`,
   });
   const comNome = (botao, nome) => { botao.querySelector('.menu-nome').textContent = nome; return botao; };
+  const solta = (botao, fazer) => { ligarSoltar(botao, fazer); return botao; };
+  const quantas = (ts) => (ts.length === 1 ? ts[0].titulo : `${ts.length} tarefas`);
 
   const fixas = [
-    comNome(item('Hoje', 'hoje', contar((t) => t.dia === estado.hoje), atual('hoje'), () => ir('hoje')), 'Hoje'),
-    comNome(item('Prioridades', 'estrela', contar((t) => t.prioridade_semana), atual('lista', 'prioridades'), () => abrirLista('prioridades')), 'Prioridades'),
+    solta(comNome(item('Hoje', 'hoje', contar((t) => t.dia === estado.hoje), atual('hoje'), () => ir('hoje')), 'Hoje'), (ts) => trazerParaHoje(ts)),
+    solta(comNome(item('Prioridades', 'estrela', contar((t) => t.prioridade_semana), atual('lista', 'prioridades'), () => abrirLista('prioridades')), 'Prioridades'),
+      (ts) => emLote(ts, { prioridade_semana: true }, { marca: '★ Prioridade', mensagem: `Estrela · ${quantas(ts)}` })),
     comNome(item('Semana', 'semana', 0, atual('semana'), () => ir('semana')), 'Semana'),
-    comNome(item('Caixa', 'caixa', contar((t) => !t.dia), atual('caixa'), () => ir('caixa')), 'Caixa de entrada'),
+    solta(comNome(item('Caixa', 'caixa', contar((t) => !t.dia), atual('caixa'), () => ir('caixa')), 'Caixa de entrada'),
+      (ts) => emLote(ts, { dia: null }, { marca: '→ Caixa de entrada', mensagem: `${quantas(ts)} → Caixa de entrada` })),
     comNome(item('Diário', 'diario', 0, atual('diario'), () => ir('diario')), 'Diário'),
   ];
 
@@ -43,9 +50,10 @@ export function desenharMenu() {
     }, '›');
     return el('div', { classe: 'menu-grupo' + (aberto ? ' aberto' : '') },
       el('div', { classe: 'menu-linha' }, seta,
-        comNome(item(g.nome, 'grupos', g.total, atual('lista', 'area', g.nome), () => { areasAbertas.add(g.nome); abrirLista('area', g.nome); }), g.nome)),
-      aberto ? g.subgrupos.map((s) => comNome(item(s.nome ?? 'Sem subgrupo', null, s.total, atual('lista', 'sub', g.nome, s.nome),
-        () => abrirLista('sub', g.nome, s.nome), 'menu-sub'), s.nome ?? 'Sem subgrupo')) : null);
+        solta(comNome(item(g.nome, 'grupos', g.total, atual('lista', 'area', g.nome), () => { areasAbertas.add(g.nome); abrirLista('area', g.nome); }), g.nome),
+          (ts) => moverGrupo(ts, g.nome, null))),
+      aberto ? g.subgrupos.map((s) => solta(comNome(item(s.nome ?? 'Sem subgrupo', null, s.total, atual('lista', 'sub', g.nome, s.nome),
+        () => abrirLista('sub', g.nome, s.nome), 'menu-sub'), s.nome ?? 'Sem subgrupo'), (ts) => moverGrupo(ts, g.nome, s.nome))) : null);
   });
 
   menu.replaceChildren(

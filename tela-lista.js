@@ -25,7 +25,14 @@ export function abrirLista(tipo, area = null, subgrupo = null) {
 export const mesmaLista = (tipo, area = null, subgrupo = null) =>
   !!estado.lista && estado.lista.tipo === tipo && estado.lista.area === area && estado.lista.subgrupo === subgrupo;
 
-const ordem = (a, b) => (a.dia ?? '9999').localeCompare(b.dia ?? '9999') || (a.criado_em || '').localeCompare(b.criado_em || '');
+// A ordem que a pessoa escolheu arrastando vem primeiro; sem ela, pela data e pela criação.
+const ordem = (a, b) => ((a.ordem ?? Infinity) - (b.ordem ?? Infinity)) || (a.dia ?? '9999').localeCompare(b.dia ?? '9999')
+  || (a.criado_em || '').localeCompare(b.criado_em || '');
+// Lista que aceita mudar a ordem arrastando; com área e subgrupo, soltar nela também move a tarefa para lá.
+const listaQueOrdena = (tarefas, opcoes, area, subgrupo) => el('div', {
+  classe: 'lista', 'data-reordena': true,
+  ...(area !== undefined ? { 'data-area': area ?? '', 'data-subgrupo': subgrupo ?? '' } : {}),
+}, tarefas.map((t) => linha(t, opcoes)));
 
 export function desenharLista() {
   const L = estado.lista, tela = $('tela-lista');
@@ -44,10 +51,10 @@ export function desenharLista() {
   } else if (L.tipo === 'area') {
     for (const s of agruparPorArea(ativas, lugar)[0]?.subgrupos || []) {
       corpo.push(el('p', { classe: 'rotulo', style: 'text-transform:none' }, `${s.nome ?? 'Sem subgrupo'} · ${s.total}`),
-        el('div', { classe: 'lista' }, s.tarefas.sort(ordem).map((t) => linha(t, opcoes))));
+        listaQueOrdena(s.tarefas.sort(ordem), opcoes, L.area, s.nome));
     }
   } else {
-    corpo.push(el('div', { classe: 'lista' }, ativas.map((t) => linha(t, opcoes))));
+    corpo.push(L.tipo === 'sub' ? listaQueOrdena(ativas, opcoes, L.area, L.subgrupo) : listaQueOrdena(ativas, opcoes));
   }
 
   tela.replaceChildren(...[   // o que não existe (null) fica de fora, senão aparece escrito "null"

@@ -117,7 +117,7 @@ section.grupo { margin-top: 22px; }
 .cartao { background: var(--cartao); border: 1px solid var(--linha); border-radius: 20px; padding: 14px 16px; }
 .prioridades { background: color-mix(in srgb, var(--luz) 16%, var(--cartao)); border-color: color-mix(in srgb, var(--luz) 38%, var(--linha)); }
 .lista { display: flex; flex-direction: column; gap: 12px; }
-.tarefa { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 6px; border-radius: 18px; background: var(--cartao); border: 1.5px solid var(--linha); box-shadow: 0 3px 0 var(--linha); }
+.tarefa { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 6px; border-radius: 18px; background: var(--cartao); border: 1.5px solid var(--linha); box-shadow: 0 3px 0 var(--linha); }
 .prioridades .lista, .passos { gap: 0; }
 .prioridades .tarefa { background: transparent; border: 0; box-shadow: none; border-radius: 0; padding: 8px 0; }
 .prioridades .tarefa + .tarefa, .passos .tarefa + .tarefa { border-top: 1.5px solid color-mix(in srgb, var(--suave) 30%, transparent); }
@@ -355,6 +355,16 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 .menu-sub { padding-left: 44px; min-height: 40px; font-size: .95rem; }
 .menu-nova { margin-top: 10px; color: var(--suave); font-weight: 700; }
 .menu-marca { margin: 4px 12px 14px; }
+
+/* Arrastar (Fase B, só no notebook): a linha da luz mostra onde a tarefa vai cair; o menu lateral mostra onde dá para soltar */
+.tarefa[draggable="true"] { cursor: grab; }
+.tarefa.arrastando { opacity: .45; cursor: grabbing; }
+.tarefa.soltar-antes::before, .tarefa.soltar-depois::after { content: ""; position: absolute; left: 10px; right: 10px; height: 4px; border-radius: 2px;
+  background: var(--luz); box-shadow: 0 0 8px var(--luz); pointer-events: none; }
+.tarefa.soltar-antes::before { top: -9px; }
+.tarefa.soltar-depois::after { bottom: -10px; }
+body.arrastando-tarefa .menu-item[data-solta] { outline: 2px dashed color-mix(in srgb, var(--luz) 55%, transparent); outline-offset: -2px; }
+.menu-item.alvo { background: color-mix(in srgb, var(--luz) 38%, transparent); outline: 3px solid var(--luz) !important; }
 
 @media (max-width: 999px) {
   /* No celular, a estrela aparece só na tarefa que já tem; pôr e tirar fica no ⋯ (cartão com espaço para o título). */

@@ -4,6 +4,7 @@ import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSe
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
+import { ligarArrastar } from './arrastar.js';
 
 const PARTES = [['manha', 'manhã'], ['almoco', 'almoço'], ['tarde', 'tarde'], ['noite', 'noite'], [null, 'a qualquer hora']];
 const LENTES = [['dinheiro', 'Dinheiro'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];
@@ -31,7 +32,7 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
   if (!semGrupo && (t.area || t.subgrupo)) marcas.push(el('span', { classe: 'marca-t' }, [t.area, t.subgrupo].filter(Boolean).join(' › ')));
   if (marca) marcas.push(el('span', { classe: 'marca-t aviso' }, marca));
 
-  return el('div', { classe: classes, 'data-id': t.id, oncontextmenu: (e) => { e.preventDefault(); abrirAcoes(t); } },
+  const cartao = el('div', { classe: classes, 'data-id': t.id, oncontextmenu: (e) => { e.preventDefault(); abrirAcoes(t); } },
     el('button', {
       type: 'button', classe: 'botao-lamp', 'aria-pressed': String(feita), 'data-mantem-aviso': true,
       'aria-label': `${feita ? 'Feita' : 'Marcar como feita'}: ${t.titulo}`, html: lampada(feita),
@@ -59,6 +60,8 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
       onclick: () => abrirAcoes(t),
     }, '⋯'),
   );
+  ligarArrastar(cartao, t);   // no notebook: arrastar para mudar a ordem ou soltar no menu lateral
+  return cartao;
 }
 function comPorque(no, t) {
   const p = no.querySelector('.porque span');
