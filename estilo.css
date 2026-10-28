@@ -139,6 +139,7 @@ section.grupo { margin-top: 22px; }
 .tarefa.entrou { animation: entrar calc(.5s * var(--t)) var(--mola); }
 .tarefa.vai { animation: sair calc(.35s * var(--t)) ease-in forwards; }
 .vazio { color: var(--suave); padding: 6px 4px; font-size: 1rem; }
+.vazio.detalhe { font-size: .85rem; word-break: break-word; }
 /* Carregando (lote 52): o desenho dos cartões, sem pular; com "Movimento: Parado", sem brilho */
 .esqueleto-cartao { height: 64px; background: color-mix(in srgb, var(--suave) 12%, var(--cartao)); }
 .mov-vivo .esqueleto-cartao, .mov-calmo .esqueleto-cartao { animation: esqueleto 1.4s ease-in-out infinite; }
@@ -363,6 +364,15 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 /* Arrastar (Fase B, só no notebook): a linha da luz mostra onde a tarefa vai cair; o menu lateral mostra onde dá para soltar */
 .tarefa[draggable="true"] { cursor: grab; }
 .tarefa.arrastando { opacity: .45; cursor: grabbing; }
+/* Resumo no topo do Hoje (lote 36): três números e a barra do que foi feito na semana */
+.resumo { margin-top: 18px; padding: 14px 16px; }
+.resumo-linha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.resumo-n { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: 0; color: var(--tinta); font: inherit; cursor: pointer; padding: 4px; border-radius: 12px; }
+.resumo-n strong { font-family: var(--f-titulo); font-size: 1.6rem; line-height: 1.1; }
+.resumo-n span { font-size: .85rem; color: var(--suave); text-align: center; }
+.resumo-barra { height: 8px; margin-top: 12px; border-radius: 99px; background: var(--linha); overflow: hidden; }
+.resumo-barra span { display: block; height: 100%; border-radius: 99px; background: var(--luz); }
+.resumo-feitas { margin: 6px 0 0; font-size: .9rem; color: var(--suave); text-align: center; }
 /* Caixas do Hoje (28/10): cartões separados, como na tela Prioridades. Caixa vazia só aparece enquanto se arrasta, para receber */
 .caixa-hoje h2 .estrela-titulo { width: 22px; height: 22px; margin-right: 6px; }
 .caixa-hoje.vazia { display: none; }

@@ -13,6 +13,29 @@
   <link rel="preload" href="fontes/bricolage-grotesque-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="estilo.css">
   <script src="versao.js"></script>
+  <script>
+    // Centelha · rede de segurança (28/10, o Android que ficava só no topo): se o app não começar em 12 s,
+    // mostra o porquê e o botão Recarregar. Fica fora do app.js de propósito: funciona até se o app.js nem carregar.
+    window.__centelhaErros = [];
+    addEventListener('error', function (e) { __centelhaErros.push(String(e.message || (e.target && (e.target.src || e.target.href)) || 'erro')); }, true);
+    addEventListener('unhandledrejection', function (e) { __centelhaErros.push(String((e.reason && e.reason.message) || e.reason)); });
+    setTimeout(function () {
+      if (window.__centelhaIniciou) return;
+      var tela = document.getElementById('tela-hoje');
+      if (!tela) return;
+      var linha = function (tag, classe, texto) { var n = document.createElement(tag); if (classe) n.className = classe; n.textContent = texto; return n; };
+      var botao = linha('button', 'btn grande', 'Recarregar');
+      botao.type = 'button';
+      botao.onclick = function () { location.reload(); };
+      tela.textContent = '';
+      tela.appendChild(linha('h1', '', 'O Centelha não abriu direito'));
+      tela.appendChild(linha('p', 'data', 'Nada se perdeu: suas tarefas estão guardadas no banco.'));
+      tela.appendChild(botao);
+      tela.appendChild(linha('p', 'vazio', 'Se continuar, feche o navegador de vez e abra de novo.'));
+      tela.appendChild(linha('p', 'vazio detalhe', 'Detalhe para o suporte: ' + (__centelhaErros.slice(-2).join(' · ') || 'o app não começou') + ' · versão ' + (self.VERSAO_APP || 'dev')));
+      tela.hidden = false;
+    }, 12000);
+  </script>
   <script src="vendor/supabase-2.117.2.js" defer></script>
   <script type="module" src="app.js"></script>
 </head>

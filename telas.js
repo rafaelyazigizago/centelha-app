@@ -1,6 +1,6 @@
 // Centelha · telas Hoje, Semana e Caixa de entrada.
 import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
-import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA } from './calculos.js';
+import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
@@ -89,6 +89,23 @@ export function dobra(id, titulo, quantos, conteudo, conjunto = dobrasAbertas, c
   return caixa;
 }
 
+// ---------- O resumo no topo (lote 36): Hoje · Esta semana · Mais para frente, e a barra do que foi feito ----------
+function resumo() {
+  const r = resumoDoTopo(estado.tarefas.filter(visiveis), estado.hoje);
+  const numero = (n, nome, ir) => el('button', { type: 'button', classe: 'resumo-n', onclick: ir }, el('strong', {}, String(n)), el('span', {}, nome));
+  return el('section', { classe: 'resumo cartao', 'aria-label': 'Resumo' },
+    el('div', { classe: 'resumo-linha' },
+      numero(r.hoje, 'Hoje', () => document.querySelector('#tela-hoje [data-caixa-hoje="manha"]')?.scrollIntoView({ behavior: movimento() === 'vivo' ? 'smooth' : 'auto' })),
+      numero(r.semana, 'Esta semana', () => document.querySelector('.aba[data-aba="semana"]')?.click()),
+      numero(r.depois, 'Mais para frente', () => {   // abre "Próximos dias" (se estiver fechada) e vai até ela
+        const proximos = [...document.querySelectorAll('#tela-hoje .dobra > button')].find((b) => b.textContent.includes('Próximos dias'));
+        if (proximos?.getAttribute('aria-expanded') === 'false') proximos.click();
+        proximos?.scrollIntoView({ block: 'center' });
+      })),
+    el('div', { classe: 'resumo-barra', role: 'img', 'aria-label': `${r.feitas} feitas esta semana` }, el('span', { style: `width:${Math.round(r.fracao * 100)}%` })),
+    el('p', { classe: 'resumo-feitas' }, r.feitas === 1 ? '1 feita esta semana' : `${r.feitas} feitas esta semana`));
+}
+
 // ---------- Varal pequeno do dia ----------
 let ultimasAcesas = null;
 function varalMini() {
@@ -158,14 +175,17 @@ export function desenharHoje() {
     el('p', { classe: 'data' }, hoje[0].toUpperCase() + hoje.slice(1)),
     ...varalMini(),
     formAnotar(),
+    resumo(),
   ];
 
   // As caixas do Hoje (pedido de Rafael, 28/10): cartões separados, como na tela Prioridades, e cada tarefa numa caixa só.
   const daCaixa = new Map(CAIXAS_DO_HOJE.map(([c]) => [c, []]));
+  const feitasAntes = [];   // feitas antes de abrir a tela: recolhidas no fim; a que você acende agora fica no lugar, acesa
   for (const t of estado.tarefas) {
     if (!visiveis(t) || !passaNasLentes(t, estado.lentes)) continue;
     const c = caixaDoHoje(t, secao(t));
-    if (c) daCaixa.get(c).push(t);
+    if (c && t.estado === 'feita' && !estado.abertasNoInicio.has(t.id)) feitasAntes.push(t);
+    else if (c) daCaixa.get(c).push(t);
   }
   const caixa = (c, nome, opcoes = {}) => {
     const tarefas = daCaixa.get(c).sort(ordemNaCaixa);
@@ -198,6 +218,12 @@ export function desenharHoje() {
     d.classList.add('caixa-hoje');
     if (!tarefas.length) d.classList.add('vazia');
     d.dataset.caixaHoje = c;
+    blocos.push(d);
+  }
+
+  if (feitasAntes.length) {
+    const d = dobra('feitas-hoje', 'Feitas hoje', feitasAntes.length, el('div', { classe: 'lista' }, feitasAntes.sort(ordenar).map((t) => linha(t, { estrela: true }))));
+    d.classList.add('feitas-hoje');
     blocos.push(d);
   }
 

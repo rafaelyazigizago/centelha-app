@@ -30,15 +30,17 @@ self.addEventListener('fetch', (e) => {
   if (pedido.method !== 'GET' || new URL(pedido.url).origin !== self.location.origin) return;
   // 'no-cache': pergunta ao servidor se o arquivo mudou antes de usar a cópia do navegador.
   const daRede = pedido.mode === 'navigate' ? fetch(pedido.url, { cache: 'no-cache' }) : fetch(pedido, { cache: 'no-cache' });
-  e.respondWith(
-    daRede
-      .then((resposta) => {
-        if (resposta.ok) {
-          const copia = resposta.clone();
-          caches.open(VERSAO).then((c) => c.put(pedido, copia));
-        }
-        return resposta;
-      })
-      .catch(() => caches.match(pedido, { ignoreSearch: true }).then((r) => r || caches.match('index.html'))),
-  );
+  const guardar = daRede.then((resposta) => {
+    if (resposta.ok) {
+      const copia = resposta.clone();
+      caches.open(VERSAO).then((c) => c.put(pedido, copia));
+    }
+    return resposta;
+  });
+  // Rede lenta (28/10, o Android que ficava carregando): depois de 10 s, usa a cópia guardada; sem cópia, continua esperando.
+  const lenta = new Promise((ok) => setTimeout(ok, 10000))
+    .then(() => caches.match(pedido, { ignoreSearch: true }))
+    .then((r) => r || guardar);
+  e.respondWith(Promise.race([guardar, lenta])
+    .catch(() => caches.match(pedido, { ignoreSearch: true }).then((r) => r || caches.match('index.html'))));
 });

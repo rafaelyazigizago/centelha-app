@@ -85,6 +85,22 @@ export function agruparPorArea(tarefas, onde = (t) => t) {
   }).sort(ordemGrupo);
 }
 
+// ---------- O resumo no topo do Hoje (lote 36, ideia do Krivo) ----------
+// Quantas abertas há hoje, no resto da semana e mais para frente, e quantas foram feitas desde segunda.
+// A barra começa pelo feito: feitas ÷ (feitas + o que ainda está marcado para hoje e para o resto da semana).
+export function resumoDoTopo(tarefas, hoje) {
+  const domingo = somarDias(segundaDaSemana(hoje), 6);
+  const abertas = tarefas.filter((t) => t.estado === 'aberta' && t.dia);
+  const r = {
+    hoje: abertas.filter((t) => t.dia === hoje).length,
+    semana: abertas.filter((t) => t.dia > hoje && t.dia <= domingo).length,
+    depois: abertas.filter((t) => t.dia > domingo).length,
+    feitas: feitasNaSemana(tarefas, hoje),
+  };
+  const total = r.feitas + r.hoje + r.semana;
+  return { ...r, fracao: total ? r.feitas / total : 0 };
+}
+
 // ---------- O Hoje em caixas (pedido de Rafael, 28/10) ----------
 // Cada tarefa aparece numa caixa só. Em andamento e Aguardando outros valem para qualquer dia (são etiquetas,
 // como no Quadro: "em andamento" e qualquer uma que comece com "aguardando"); Prioridades, para a semana;

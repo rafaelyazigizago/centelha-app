@@ -110,9 +110,30 @@ function ajustarAoTamanho() {
 largo.addEventListener('change', ajustarAoTamanho);
 window.addEventListener('resize', ajustarAoTamanho);   // reserva: nem todo navegador avisa a troca pelo "change"
 
+// ---------- Tempo máximo (28/10, o Android que ficava só no topo) ----------
+// Nenhuma espera do banco é para sempre: em 10 s vira a tela "Não consegui falar com o banco", com "Tentar de novo".
+const TEMPO_MAXIMO_MS = window.__CENTELHA_TEMPO_MAXIMO_MS ?? 10000;
+const comTempo = (promessa) => Promise.race([promessa,
+  new Promise((_, falhar) => setTimeout(() => falhar(Object.assign(new Error('o banco não respondeu em 10 s'), { tempo: true })), TEMPO_MAXIMO_MS))]);
+
+// Erro no começo do app: em vez de ficar só o topo, diz o que houve e oferece recarregar.
+function mostrarErroAoAbrir(erro) {
+  console.error(erro);
+  window.__centelhaIniciou = true;
+  mostrarSoHoje([
+    el('h1', { id: 'titulo-hoje' }, 'O Centelha não abriu direito'),
+    el('p', { classe: 'data' }, 'Nada se perdeu: suas tarefas estão guardadas no banco.'),
+    el('button', { type: 'button', classe: 'btn grande', onclick: () => location.reload() }, 'Recarregar'),
+    el('p', { classe: 'vazio' }, 'Se continuar, feche o navegador de vez e abra de novo.'),
+    el('p', { classe: 'vazio detalhe' }, `Detalhe para o suporte: ${String(erro?.message || erro).slice(0, 160)} · versão ${self.VERSAO_APP || 'dev'}`),
+  ]);
+}
+
 // ---------- Carregando e sem banco (lote 52) ----------
 // Enquanto carrega, o desenho da tela em cartões cinza, sem pular. Sem banco, uma tela que explica e tenta de novo.
 function mostrarSoHoje(conteudo) {
+  window.__centelhaIniciou = true;   // a rede de segurança do index.html não precisa entrar
+  $('tela-entrar').hidden = true;
   for (const nome of TELAS) $(`tela-${nome}`).hidden = nome !== 'hoje';
   $('tela-hoje').replaceChildren(...conteudo);
 }
@@ -123,7 +144,7 @@ function mostrarCarregando() {
     el('p', { classe: 'vazio', role: 'status' }, 'Trazendo as suas tarefas…'),
   ]);
 }
-function mostrarSemBanco() {
+function mostrarSemBanco(tentar = () => entrar(estado.usuario)) {
   mostrarEstado('Não carregou', true);
   mostrarSoHoje([
     el('h1', { id: 'titulo-hoje' }, 'Não consegui falar com o banco'),
@@ -131,12 +152,13 @@ function mostrarSemBanco() {
     el('ul', { classe: 'lista' },
       el('li', { classe: 'vazio' }, 'Sem internet? Quando ela voltar, eu tento de novo sozinho.'),
       el('li', { classe: 'vazio' }, 'O banco pode estar em pausa. Tente de novo em alguns minutos.')),
-    el('button', { type: 'button', classe: 'btn grande', id: 'tentar-de-novo', onclick: () => entrar(estado.usuario) }, 'Tentar de novo'),
+    el('button', { type: 'button', classe: 'btn grande', id: 'tentar-de-novo', onclick: tentar }, 'Tentar de novo'),
   ]);
 }
 
 // ---------- Entrar ----------
 function mostrarEntrar() {
+  window.__centelhaIniciou = true;
   for (const nome of TELAS) $(`tela-${nome}`).hidden = true;
   estado.painel = null;
   document.body.classList.remove('logado', 'com-painel');
@@ -169,7 +191,7 @@ async function entrar(usuario) {
   mostrarEstado('Carregando…');
   if (!estado.carregadoEm) mostrarCarregando();
   try {
-    estado.espacoId = await dados.espacoPessoal(usuario.id);
+    estado.espacoId = await comTempo(dados.espacoPessoal(usuario.id));
   } catch (erro) {
     console.error(erro);
     mostrarSemBanco();
@@ -182,7 +204,7 @@ async function entrar(usuario) {
 async function carregar() {
   const desde = deISO(segundaDaSemana(hojeISO())).toISOString();
   try {
-    [estado.tarefas, estado.passos] = await Promise.all([dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos()]);
+    [estado.tarefas, estado.passos] = await comTempo(Promise.all([dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos()]));
   } catch (erro) {
     console.error(erro);
     if (!estado.carregadoEm) { mostrarSemBanco(); return false; }   // na 1ª carga, a tela que explica; depois, o que já está na tela fica
@@ -274,7 +296,8 @@ function ligar() {
   $('fechar-ajustes').addEventListener('click', () => fecharFolha('folha-ajustes'));
   $('exportar').addEventListener('click', exportar);
   $('sair').addEventListener('click', sair);
-  $('versao-app').textContent = `Versão do app: ${self.VERSAO_APP || 'dev'}`;
+  const versao = $('versao-app');   // página velha guardada pode não ter esta linha: o app não quebra por isso
+  if (versao) versao.textContent = `Versão do app: ${self.VERSAO_APP || 'dev'}`;
   document.querySelectorAll('#abas .aba').forEach((b) => b.addEventListener('click', () => irPara(b.dataset.aba)));
 
   document.addEventListener('keydown', (e) => {
@@ -305,6 +328,13 @@ let versaoNova = false;
 const textoPelaMetade = () => [...document.querySelectorAll('input:not([type]), input[type=text], input[type=search], textarea')].some((c) => c.value.trim());
 
 async function iniciar() {
+  try { await comecar(); } catch (erro) {
+    if (erro?.tempo) mostrarSemBanco(() => location.reload());   // o login nem respondeu: recarregar começa tudo de novo
+    else mostrarErroAoAbrir(erro);
+  }
+}
+
+async function comecar() {
   preferencias.aplicar();
   ligar();
   if ('serviceWorker' in navigator) {
@@ -315,7 +345,7 @@ async function iniciar() {
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
   }
   dados.iniciar();
-  const { data } = await dados.banco.auth.getSession();
+  const { data } = await comTempo(dados.banco.auth.getSession());
   if (location.search.includes('code=')) history.replaceState(null, '', location.pathname);
   dados.banco.auth.onAuthStateChange((evento) => { if (evento === 'SIGNED_OUT' && estado.usuario) { estado.usuario = null; mostrarEntrar(); } });
   if (data.session) await entrar(data.session.user);
