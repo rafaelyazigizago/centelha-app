@@ -73,6 +73,19 @@ export async function criarProjeto(espacoId, nome) {
   return exigir(await banco.from('projetos').insert({ espaco_id: espacoId, nome }).select(CAMPOS_PROJETO).single());
 }
 
+// ---------- Etiquetas cadastradas (0007), com cor. Arquivam-se, não se apagam ----------
+const CAMPOS_ETIQUETA = 'id,nome,cor,arquivada';
+export async function etiquetas(espacoId) {
+  if (!tem0007) return [];
+  return exigir(await banco.from('etiquetas').select(CAMPOS_ETIQUETA).eq('espaco_id', espacoId).order('nome', { ascending: true }));
+}
+export async function criarEtiqueta(espacoId, nome, cor = null) {
+  return exigir(await banco.from('etiquetas').insert({ espaco_id: espacoId, nome, cor }).select(CAMPOS_ETIQUETA).single());
+}
+export async function mudarEtiqueta(id, patch) {
+  mudouUma(await banco.from('etiquetas').update(patch).eq('id', id).select('id'));
+}
+
 export async function passosDe(tarefaId) {
   return exigir(await banco.from('subtarefas').select('id,texto,feita,ordem,removida')
     .eq('tarefa_id', tarefaId).eq('removida', false).order('ordem', { ascending: true }));

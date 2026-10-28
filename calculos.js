@@ -271,3 +271,30 @@ export const duracaoTexto = (ms) => {
   if (min < 1) return 'menos de 1 min';
   return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h${min % 60 ? ` ${min % 60} min` : ''}`;
 };
+
+// ---------- Etiquetas (0007, como no Vikunja): as que a pessoa escolhe e cadastra, com cor ----------
+// As de sistema têm os seus botões (situação, Importante, Urgente, ideia) e não entram no cadastro.
+const DE_SISTEMA = /^(em andamento|aguardando.*|importante|urgente|ideias?)$/i;
+export const etiquetaDeSistema = (e) => DE_SISTEMA.test(String(e).trim());
+export const etiquetasLivres = (t) => (t.etiquetas || []).filter((e) => !etiquetaDeSistema(e));
+export const mesmoNome = (a, b) => String(a).trim().toLocaleLowerCase('pt-BR') === String(b).trim().toLocaleLowerCase('pt-BR');
+export function comEtiqueta(etiquetas, nome, ligar) {
+  const resto = (etiquetas || []).filter((e) => !mesmoNome(e, nome));
+  return ligar ? [...resto, String(nome).trim()] : resto;
+}
+// As etiquetas em uso nas tarefas abertas, sem as de sistema, com quantas tarefas cada uma tem (vale a 1ª grafia).
+export function etiquetasEmUso(tarefas) {
+  const uso = new Map();
+  for (const t of tarefas) {
+    if (t.estado !== 'aberta') continue;
+    for (const e of etiquetasLivres(t)) {
+      const chave = e.trim().toLocaleLowerCase('pt-BR');
+      const item = uso.get(chave) || { nome: e.trim(), total: 0 };
+      item.total += 1;
+      uso.set(chave, item);
+    }
+  }
+  return [...uso.values()].sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'));
+}
+// A paleta das cores (etiquetas, projetos e listas): nomes, não códigos; o tom de cada tema está no estilo.css.
+export const PALETA = ['ouro', 'laranja', 'vermelho', 'rosa', 'roxo', 'azul', 'ciano', 'verde', 'oliva', 'cinza'];

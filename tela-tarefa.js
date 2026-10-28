@@ -1,10 +1,11 @@
 // Centelha · a tarefa aberta, o "Travei" e o momento "Acesa!".
 // Aqui cada campo salva sozinho ao sair dele (ou depois de um respiro sem digitar), sem redesenhar a tela.
 import { rotuloDia, somarDias } from './datas.js';
-import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES, duracaoTexto } from './calculos.js';
+import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES, duracaoTexto, etiquetasLivres, comEtiqueta, mesmoNome } from './calculos.js';
 import { estado, mudar, falha, criarProximaVez, cancelarProxima } from './estado.js';
 import { dobra } from './telas.js';
 import { escolherMergulho } from './mergulho.js';
+import { cadastroDe, corDe, sugestoes, garantirCadastro, abrirCadastroEtiquetas } from './etiquetas.js';
 import * as dados from './dados.js';
 import { $, el, icone, lampada, abrirFolha, fecharFolha, mostrarEstado, avisar, contar, movimento, reiniciar, fagulhas, vibrar } from './ui.js';
 
@@ -112,6 +113,7 @@ function desenharTarefa() {
     dobra('tarefa-mais', 'Mais detalhes', null, [
       linhaGrupo(),
       dados.tem0007 ? linhaProjeto() : null,
+      dados.tem0007 ? linhaEtiquetas() : null,
       dados.tem0007 ? linhaTempo() : null,
       dados.tem0007 ? linhaEnergia() : null,
       linhaParte(),
@@ -330,6 +332,34 @@ function linhaProjeto() {
     el('label', { for: 'campo-projeto' }, el('span', {}, 'Projeto'), el('span', {}, 'um nome novo cria o projeto')),
     entrada,
     el('datalist', { id: 'projetos-lista' }, estado.projetos.filter((p) => !p.arquivado).map((p) => el('option', { value: p.nome }))));
+}
+
+// Etiquetas (0007): as suas, com a cor do cadastro. Escrever e Enter põe (uma nova também entra no cadastro); tocar numa tira.
+function linhaEtiquetas() {
+  const alvo = t;
+  const refazer = () => { if (t === alvo) $('tarefa-etiquetas')?.replaceWith(linhaEtiquetas()); };
+  const entrada = el('input', { id: 'campo-etiqueta', type: 'text', list: 'etiquetas-lista', autocomplete: 'off', placeholder: 'escreva e Enter', enterkeyhint: 'done', maxlength: '40' });
+  const por = async () => {
+    const nome = entrada.value.replace(/\s+/g, ' ').trim().replace(/^#/, '');
+    entrada.value = '';
+    if (!nome || etiquetasLivres(alvo).some((e) => mesmoNome(e, nome))) return;
+    const cad = cadastroDe(nome), escrita = cad ? cad.nome : nome;   // vale a grafia do cadastro
+    if (!(await gravarEm(alvo, { etiquetas: comEtiqueta(alvo.etiquetas, escrita, true) }))) return;
+    if (!cad) await garantirCadastro(escrita).catch(() => {});   // o cadastro é um extra: se falhar, a etiqueta fica na tarefa
+    refazer();
+  };
+  entrada.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); por(); } });
+  entrada.addEventListener('change', por);
+  const livres = etiquetasLivres(alvo);
+  return el('div', { classe: 'campo', id: 'tarefa-etiquetas' },
+    el('label', { for: 'campo-etiqueta' }, el('span', {}, 'Etiquetas'),
+      el('button', { type: 'button', classe: 'link-leve', 'data-mantem-aviso': true, onclick: abrirCadastroEtiquetas }, 'cadastrar e dar cor')),
+    livres.length ? el('div', { classe: 'fileira' }, livres.map((e) => el('button', {
+      type: 'button', classe: 'pilula etiqueta', 'data-cor': corDe(e) || null, 'data-mantem-aviso': true, 'aria-label': `Tirar a etiqueta ${e}`,
+      onclick: async () => { if (await gravarEm(alvo, { etiquetas: comEtiqueta(alvo.etiquetas, e, false) })) refazer(); },
+    }, `#${e}`, el('span', { 'aria-hidden': 'true' }, ' ✕')))) : null,
+    entrada,
+    el('datalist', { id: 'etiquetas-lista' }, sugestoes().filter((n) => !livres.some((e) => mesmoNome(e, n))).map((n) => el('option', { value: n }))));
 }
 
 const TEMPOS = [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']];

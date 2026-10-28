@@ -5,6 +5,8 @@ import { agruparPorArea } from './calculos.js';
 import { estado, anotar, lugar } from './estado.js';
 import { dobra, linha } from './telas.js';
 import { $, el } from './ui.js';
+import { tem0007 } from './dados.js';
+import { abrirCadastroEtiquetas } from './etiquetas.js';
 
 const abertas = new Set();   // dobras que a pessoa abriu
 let abrirLista = () => {};
@@ -22,7 +24,8 @@ export function desenharGrupos() {
     el('div', { classe: 'fileira', style: 'margin-top:10px' },
       el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('todas') }, 'Ver todas numa página'),
       el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('matriz') }, 'Matriz: importante × urgente'),
-      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('calendario') }, 'Calendário do mês')),
+      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('calendario') }, 'Calendário do mês'),
+      tem0007 ? el('button', { type: 'button', classe: 'pilula', id: 'abrir-etiquetas', onclick: abrirCadastroEtiquetas }, 'Etiquetas') : null),
     projetos(),
     grupos.length
       ? el('div', { classe: 'grupos' }, grupos.map(cartaoArea))

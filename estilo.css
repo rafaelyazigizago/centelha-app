@@ -289,6 +289,45 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 .mergulhar svg { width: 22px; height: 22px; }
 body.mergulhando { overflow: hidden; }
 
+/* Paleta (0007): a cor das etiquetas, dos projetos e das listas. Nomes, não códigos: cada tema tem o seu tom.
+   O texto continua na cor da tinta; a cor vai na bolinha e num fundo leve, para não perder contraste. */
+[data-cor="ouro"] { --cor: #B07A06; }
+[data-cor="laranja"] { --cor: #C8621A; }
+[data-cor="vermelho"] { --cor: #C0392B; }
+[data-cor="rosa"] { --cor: #C2185B; }
+[data-cor="roxo"] { --cor: #7B4FBF; }
+[data-cor="azul"] { --cor: #1A5FD6; }
+[data-cor="ciano"] { --cor: #0E8A9E; }
+[data-cor="verde"] { --cor: #2E7D5B; }
+[data-cor="oliva"] { --cor: #7A7A1F; }
+[data-cor="cinza"] { --cor: #5B6770; }
+:root[data-tema="noite"] [data-cor="ouro"] { --cor: #F5B841; }
+:root[data-tema="noite"] [data-cor="laranja"] { --cor: #F0954A; }
+:root[data-tema="noite"] [data-cor="vermelho"] { --cor: #F07167; }
+:root[data-tema="noite"] [data-cor="rosa"] { --cor: #F48FB1; }
+:root[data-tema="noite"] [data-cor="roxo"] { --cor: #B39DFF; }
+:root[data-tema="noite"] [data-cor="azul"] { --cor: #8DB4FF; }
+:root[data-tema="noite"] [data-cor="ciano"] { --cor: #5FD3E3; }
+:root[data-tema="noite"] [data-cor="verde"] { --cor: #6FCF97; }
+:root[data-tema="noite"] [data-cor="oliva"] { --cor: #C9C95A; }
+:root[data-tema="noite"] [data-cor="cinza"] { --cor: #B8C2D3; }
+.marca-t[data-cor], .pilula.etiqueta[data-cor] { background: color-mix(in srgb, var(--cor) 16%, transparent); color: var(--tinta); }
+.marca-t[data-cor]::before, .pilula.etiqueta[data-cor]::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cor); margin-right: 6px; vertical-align: 1px; }
+.paleta { display: flex; flex-wrap: wrap; gap: 8px; }
+.paleta .cor { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--linha); background: var(--cor); padding: 0; }
+.paleta .cor[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--fundo), 0 0 0 5px var(--tinta); }
+.etq-nova { display: grid; gap: 10px; margin-top: 10px; }
+.etq-lista { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 14px; }
+.etq-lista li { display: grid; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--linha); }
+.etq-topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.etq-topo .ajuda { flex: 1; margin: 0; }
+.etq-arquivadas { margin-top: 16px; }
+.etq-arquivadas summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+.etq-arquivadas li { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.link-leve { border: 0; background: transparent; color: var(--suave); text-decoration: underline; padding: 0; min-height: 32px; }
+.pilula.leve { min-height: 40px; }
+#tarefa-etiquetas .fileira { margin-bottom: 4px; }
+
 /* Semana */
 .varal svg { width: 100%; height: auto; overflow: visible; display: block; margin: 8px 0 12px; }
 .varal .pendente { cursor: pointer; }

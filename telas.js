@@ -5,6 +5,7 @@ import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './es
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
 import { ligarArrastar } from './arrastar.js';
+import { corDe } from './etiquetas.js';
 
 const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];   // "Traz renda": nome novo da lente Dinheiro (28/10)
 const dobrasAbertas = new Set();
@@ -34,7 +35,7 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela, semProjeto } = {}) 
   if (temMarca(t, 'importante')) marcas.push(el('span', { classe: 'marca-t importante' }, 'Importante'));
   if (temMarca(t, 'urgente')) marcas.push(el('span', { classe: 'marca-t urgente' }, 'Urgente'));
   if ((t.etiquetas || []).some((e) => /^ideias?$/i.test(e))) marcas.push(el('span', { classe: 'marca-t ideia' }, 'ideia'));
-  for (const e of (t.etiquetas || []).filter((e) => !/^(ideias?|importante|urgente)$/i.test(e) && e !== t.subgrupo).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t' }, '#' + e));
+  for (const e of (t.etiquetas || []).filter((e) => !/^(ideias?|importante|urgente)$/i.test(e) && e !== t.subgrupo).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t etiqueta', 'data-cor': corDe(e) }, '#' + e));
   if (!semGrupo && (t.area || t.subgrupo)) marcas.push(el('span', { classe: 'marca-t' }, [t.area, t.subgrupo].filter(Boolean).join(' › ')));
   if (marca) marcas.push(el('span', { classe: 'marca-t aviso' }, marca));
 
