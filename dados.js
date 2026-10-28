@@ -4,7 +4,7 @@ const SUPABASE_URL = 'https://hlvejnlirctodkvmjehj.supabase.co';
 const CHAVE_PUBLICA = 'sb_publishable_B8VUf-oWJwakz9uBSXEeIA_TeSn9y0m';
 
 export const CAMPOS = 'id,titulo,notas,estado,dia,inicio,parte_do_dia,hora,area,subgrupo,ordem,etiquetas,lentes,prioridade_semana,vezes_adiada,' +
-  'porque,parei_aqui,proximo_passo,pronto_quando,resultado_meta,resultado_efeito,prova_url,privada,feita_em,criado_em';
+  'repetir_dias,porque,parei_aqui,proximo_passo,pronto_quando,resultado_meta,resultado_efeito,prova_url,privada,feita_em,criado_em';
 
 export let banco;
 
@@ -111,6 +111,36 @@ export async function baixarMidia(caminho) {
 
 export async function marcarMidia(id, removida) {
   mudouUma(await banco.from('diario_midias').update({ removida }).eq('id', id).select('id'));
+}
+
+// Comentários e arquivos de uma tarefa (28/10): os que vieram do Quadro e os novos. Nada se apaga: só ver e acrescentar.
+const CAMPOS_COMENTARIO = 'id,texto,criado_em', CAMPOS_ANEXO = 'id,nome,tipo,caminho,tamanho,criado_em';
+export async function conversaDe(tarefaId) {
+  const [comentarios, anexos] = await Promise.all([
+    banco.from('comentarios').select(CAMPOS_COMENTARIO).eq('tarefa_id', tarefaId).order('criado_em', { ascending: true }),
+    banco.from('anexos').select(CAMPOS_ANEXO).eq('tarefa_id', tarefaId).order('criado_em', { ascending: true }),
+  ]);
+  return { comentarios: exigir(comentarios), anexos: exigir(anexos) };
+}
+
+export async function comentar(tarefaId, texto) {
+  return exigir(await banco.from('comentarios').insert({ tarefa_id: tarefaId, texto }).select(CAMPOS_COMENTARIO).single());
+}
+
+// O arquivo vai para anexos/<id da tarefa>/…: a regra do Storage só deixa quem vê a tarefa ver e mandar arquivo dela.
+export async function anexar(tarefaId, arquivo) {
+  const limpo = arquivo.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '-').slice(-80) || 'arquivo';
+  const caminho = `${tarefaId}/${Date.now()}-${limpo}`;
+  const { error } = await banco.storage.from('anexos').upload(caminho, arquivo, { contentType: arquivo.type || 'application/octet-stream', upsert: false });
+  if (error) throw error;
+  return exigir(await banco.from('anexos').insert({ tarefa_id: tarefaId, nome: arquivo.name, tipo: arquivo.type || null, caminho, tamanho: arquivo.size })
+    .select(CAMPOS_ANEXO).single());
+}
+
+export async function baixarAnexo(caminho) {
+  const { data, error } = await banco.storage.from('anexos').download(caminho);
+  if (error) throw error;
+  return data;
 }
 
 // Exportar tudo o que é seu, num arquivo só (o Supabase grátis não faz cópia sozinho).

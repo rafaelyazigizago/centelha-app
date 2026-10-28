@@ -1,6 +1,6 @@
 // Centelha · telas Hoje, Semana e Caixa de entrada.
 import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
-import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo, temMarca } from './calculos.js';
+import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo, temMarca, REPETICOES } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
@@ -27,6 +27,7 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
   const passos = estado.passos.get(t.id);
   if (passos?.total) marcas.push(el('span', { classe: 'marca-t' }, `${passos.feitos} de ${passos.total} passos`));
   for (const [chave, nome] of LENTES) if ((t.lentes || []).includes(chave)) marcas.push(el('span', { classe: 'marca-t', html: `${icone(chave)} ${nome}` }));
+  if (t.repetir_dias > 0) marcas.push(el('span', { classe: 'marca-t' }, `↻ ${REPETICOES.find(([n]) => n === t.repetir_dias)?.[1] ?? `a cada ${t.repetir_dias} dias`}`));
   if (temMarca(t, 'importante')) marcas.push(el('span', { classe: 'marca-t importante' }, 'Importante'));
   if (temMarca(t, 'urgente')) marcas.push(el('span', { classe: 'marca-t urgente' }, 'Urgente'));
   if ((t.etiquetas || []).some((e) => /^ideias?$/i.test(e))) marcas.push(el('span', { classe: 'marca-t ideia' }, 'ideia'));

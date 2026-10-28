@@ -214,3 +214,26 @@ export function barraNaLinha(t, primeiro, dias) {
   if (comeco >= dias) return null;
   return { de: Math.max(0, comeco), ate: Math.max(0, Math.min(dias - 1, fim)), antes: comeco < 0 };
 }
+
+// ---------- Repetir (28/10) ----------
+// repetir_dias (já existia no banco): 0 não repete · 1 todo dia · 7 toda semana · 15 a cada 15 dias · 30 todo mês, no mesmo dia.
+export const REPETICOES = [[0, 'Não repete'], [1, 'Todo dia'], [7, 'Toda semana'], [15, 'A cada 15 dias'], [30, 'Todo mês']];
+// Mês seguinte no mesmo dia; o dia 31 vira o último dia do mês que não tem 31.
+export function somarMeses(iso, meses, diaDoMes = +iso.slice(8)) {
+  const [a, m] = iso.split('-').map(Number);
+  const alvo = new Date(a, m - 1 + meses, 1);
+  const ultimo = new Date(alvo.getFullYear(), alvo.getMonth() + 1, 0).getDate();
+  return paraISO(new Date(alvo.getFullYear(), alvo.getMonth(), Math.min(diaDoMes, ultimo)));
+}
+// A próxima vez: a partir do dia da tarefa (ou de hoje, se não tiver), pulando até depois de hoje. Atraso não vira fila.
+export function proximaVez(t, hoje) {
+  const n = t.repetir_dias || 0;
+  if (!n) return null;
+  const base = t.dia || hoje;
+  let d = base;
+  for (let k = 1; d <= hoje || k === 1; k++) {
+    d = n === 30 ? somarMeses(base, k) : somarDias(base, n * k);
+    if (k > 400) break;
+  }
+  return d;
+}

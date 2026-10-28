@@ -1,8 +1,8 @@
 // Centelha · a tarefa aberta, o "Travei" e o momento "Acesa!".
 // Aqui cada campo salva sozinho ao sair dele (ou depois de um respiro sem digitar), sem redesenhar a tela.
 import { rotuloDia, somarDias } from './datas.js';
-import { lampadasDoDia, feitasNaSemana, temMarca, comMarca } from './calculos.js';
-import { estado, mudar, falha } from './estado.js';
+import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES } from './calculos.js';
+import { estado, mudar, falha, criarProximaVez, cancelarProxima } from './estado.js';
 import { dobra } from './telas.js';
 import * as dados from './dados.js';
 import { $, el, icone, lampada, abrirFolha, fecharFolha, mostrarEstado, avisar, contar, movimento, reiniciar, fagulhas, vibrar } from './ui.js';
@@ -30,6 +30,7 @@ const SUGESTAO = {
 
 let t = null;            // a tarefa aberta
 let passos = null;       // os passos dela (null = carregando)
+let conversa = null;     // os comentários e os arquivos dela (null = carregando)
 let passoRecem = null;
 let rascunhoTravei = null;
 let voltar = () => {};
@@ -61,8 +62,12 @@ export function abrirTarefa(tarefa, volta, { painel = false } = {}) {
   nomeVolta = volta;
   noPainel = painel;
   passos = null;
+  conversa = null;
   desenharTarefa();
   const id = t.id;
+  dados.conversaDe(id)
+    .then((c) => { if (t && t.id === id) { conversa = c; redesenharConversa(); } })
+    .catch((erro) => { if (t && t.id === id) { conversa = { comentarios: [], anexos: [], erro: true }; redesenharConversa(); } console.error(erro); });
   dados.passosDe(id)
     .then((lista) => { if (t && t.id === id) { passos = lista; redesenharPassos(); } })
     .catch((erro) => { if (t && t.id === id) { passos = []; redesenharPassos(); } falha(erro); });
@@ -101,9 +106,11 @@ function desenharTarefa() {
       campoTexto('proximo_passo', 'Próximo passo', { dica: 'o que fazer primeiro quando voltar' })),
     cartaoPassos(),
     cartaoMeta(),
+    el('section', { classe: 'cartao bloco', id: 'tarefa-conversa' }, ...conteudoConversa()),
     dobra('tarefa-mais', 'Mais detalhes', null, [
       linhaGrupo(),
       linhaParte(),
+      linhaRepetir(),
       linhaPrioridade(),
       campoTexto('pronto_quando', 'Pronto quando', { dica: 'como você vai saber que acabou' }),
       campoTexto('notas', 'Notas', { linhas: 4 }),
@@ -193,6 +200,66 @@ function linhaLentes() {
     })));
 }
 
+// ---------- Comentários e arquivos (28/10): os do Quadro e os novos; nada se apaga ----------
+const LIMITE_ARQUIVO = 20 * 1024 * 1024;
+const tamanhoLegivel = (b) => (b == null ? '' : b < 1024 ? `${b} B` : b < 1048576 ? `${Math.round(b / 1024)} KB` : `${(b / 1048576).toFixed(1).replace('.', ',')} MB`);
+function redesenharConversa() { $('tarefa-conversa')?.replaceChildren(...conteudoConversa()); }
+function conteudoConversa() {
+  const alvo = t;
+  const titulo = el('h3', {}, 'Comentários e arquivos');
+  if (conversa === null) return [titulo, el('p', { classe: 'vazio' }, 'Abrindo…')];
+  if (conversa.erro) return [titulo, el('p', { classe: 'vazio' }, 'Não deu para trazer os comentários agora. Feche e abra a tarefa de novo.')];
+  const { comentarios, anexos } = conversa;
+  const campo = el('textarea', { id: 'novo-comentario', rows: 2, placeholder: 'Escrever um comentário', 'aria-label': 'Novo comentário' });
+  const form = el('form', { classe: 'novo-passo', 'data-mantem-aviso': true }, campo, el('button', { type: 'submit', classe: 'btn claro' }, 'Comentar'));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const texto = campo.value.trim();
+    if (!texto) return;
+    mostrarEstado('Salvando…');
+    try {
+      const novo = await dados.comentar(alvo.id, texto);
+      if (t !== alvo) return;
+      conversa.comentarios.push(novo);
+      redesenharConversa();
+      mostrarEstado('Salvo ✓');
+    } catch (erro) { falha(erro); }   // o texto continua no campo
+  });
+  const escolher = el('input', { type: 'file', id: 'novo-anexo', hidden: true, onchange: async (e) => {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    if (arquivo.size > LIMITE_ARQUIVO) { avisar('Arquivo grande demais: até 20 MB.'); return; }
+    mostrarEstado('Enviando…');
+    try {
+      const novo = await dados.anexar(alvo.id, arquivo);
+      if (t !== alvo) return;
+      conversa.anexos.push(novo);
+      redesenharConversa();
+      mostrarEstado('Salvo ✓');
+    } catch (erro) { falha(erro); }
+  } });
+  const abrirArquivo = async (a) => {
+    try {
+      const url = URL.createObjectURL(await dados.baixarAnexo(a.caminho));
+      const link = el('a', { href: url, download: a.nome });
+      document.body.append(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (erro) { falha(erro); }
+  };
+  return [
+    titulo,
+    comentarios.length
+      ? el('ul', { classe: 'comentarios' }, comentarios.map((c) => el('li', {}, el('p', {}, c.texto), el('span', { classe: 'ajuda' }, rotuloDia(diaLocal(c.criado_em))))))
+      : el('p', { classe: 'vazio' }, 'Nenhum comentário ainda.'),
+    form,
+    anexos.length
+      ? el('ul', { classe: 'anexos' }, anexos.map((a) => el('li', {}, el('button', { type: 'button', classe: 'link-tarefa', onclick: () => abrirArquivo(a) }, `📎 ${a.nome}`), el('span', { classe: 'ajuda' }, ` ${tamanhoLegivel(a.tamanho)}`))))
+      : null,
+    escolher,
+    el('button', { type: 'button', classe: 'btn claro', onclick: () => escolher.click() }, 'Anexar arquivo'),
+  ].filter(Boolean);
+}
+
 // Importante e Urgente (28/10): duas marcas, separadas da estrela da semana. Juntas, montam a Matriz.
 function linhaMarcas() {
   const alvo = t;
@@ -239,6 +306,18 @@ function linhaParte() {
     el('div', { classe: 'fileira' }, PARTES.map(([v, nome]) => pilula(nome, alvo.parte_do_dia === v, async () => {
       await gravarEm(alvo, { parte_do_dia: alvo.parte_do_dia === v ? null : v });
       if (t === alvo) $('tarefa-parte')?.replaceWith(linhaParte());
+    }))));
+}
+
+// Repetir (28/10): ao acender, nasce a próxima vez (estado.js, criarProximaVez).
+function linhaRepetir() {
+  const alvo = t, atual = alvo.repetir_dias || 0;
+  return el('div', { classe: 'campo', id: 'tarefa-repetir' },
+    el('span', { classe: 'rot' }, el('span', {}, 'Repetir'), el('span', {}, REPETICOES.find(([n]) => n === atual)?.[1] ?? `A cada ${atual} dias`)),
+    el('div', { classe: 'fileira' }, REPETICOES.map(([n, nome]) => pilula(nome, n === atual, async () => {
+      if (n === atual) return;
+      await gravarEm(alvo, { repetir_dias: n });
+      if (t === alvo) $('tarefa-repetir')?.replaceWith(linhaRepetir());
     }))));
 }
 
@@ -358,7 +437,7 @@ function acender(e) {
   vibrar();
   const gravou = mudar(alvo, { estado: 'feita', feita_em: new Date().toISOString() });
   abrirMomento(alvo);
-  gravou.then((ok) => { if (!ok) fecharMomento(false); });
+  gravou.then((ok) => { if (!ok) fecharMomento(false); else if (alvo.repetir_dias > 0) criarProximaVez(alvo); });
 }
 
 function apagar() {
@@ -505,5 +584,6 @@ export function fecharMomento(salvar = true) {
 function desfazerMomento() {
   const alvo = momentoDe;
   fecharMomento(false);
+  if (alvo) cancelarProxima(alvo);   // se repetia, a próxima que nasceu fica cancelada
   if (alvo) mudar(alvo, { estado: 'aberta', feita_em: null, feita_por: null }, { mensagem: 'Desfeito: a tarefa voltou a ficar aberta' });
 }

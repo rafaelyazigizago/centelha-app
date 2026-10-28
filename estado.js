@@ -1,6 +1,6 @@
 // Centelha · o estado do app e as ações que mudam tarefas: tudo muda na tela na hora, grava no banco e pode ser desfeito.
 import { hojeISO, rotuloDia, interpretar } from './datas.js';
-import { secaoDe, situacaoDe, comSituacao, temMarca, comMarca } from './calculos.js';
+import { secaoDe, situacaoDe, comSituacao, temMarca, comMarca, proximaVez } from './calculos.js';
 import * as dados from './dados.js';
 import { avisar, mostrarEstado, fagulhas, vibrar } from './ui.js';
 
@@ -72,6 +72,17 @@ export function alternarFeita(t, botao) {
     if (botao) fagulhas(botao);
     vibrar();
     document.dispatchEvent(new CustomEvent('centelha:acendeu'));   // o pet acende junto
+    if (t.repetir_dias > 0) {   // repete: nasce a próxima vez, e o Desfazer leva as duas de volta
+      return mudar(t, { estado: 'feita', feita_em: new Date().toISOString() }).then(async (ok) => {
+        if (!ok) return false;
+        const nova = await criarProximaVez(t);
+        avisar(`Acesa · ${t.titulo}${nova ? ` · volta ${rotuloDia(nova.dia).toLowerCase()}` : ''}`, async () => {
+          await cancelarProxima(t);
+          mudar(t, { estado: 'aberta', feita_em: null, feita_por: null }, { mensagem: 'Desfeito' });
+        });
+        return true;
+      });
+    }
     return mudar(t, { estado: 'feita', feita_em: new Date().toISOString() }, {
       mensagem: `Acesa · ${t.titulo}`, desfazer: { estado: 'aberta', feita_em: null, feita_por: null },
     });
@@ -128,6 +139,39 @@ export async function recomecar(lista) {
 
 // Anotar: "amanhã", "sexta", "24/10" viram o dia; "#casa" vira etiqueta; sem dia vai para a Caixa.
 // "extra" leva a área e o subgrupo quando se anota dentro de um grupo.
+// Repetir (28/10): ao acender uma tarefa que repete, nasce a próxima vez, com o mesmo título, grupo, marcas e porquê.
+// A situação (em andamento, aguardando) não vai junto: a próxima começa do zero.
+const proximas = new Map();   // id da acesa → a próxima que nasceu dela, para o Desfazer cancelar junto
+function entrouNova(nova) {
+  nova.nova = true;
+  estado.abertasNoInicio.add(nova.id);
+  estado.lugares.set(nova.id, { area: nova.area || null, subgrupo: nova.subgrupo || null });
+  estado.tarefas.unshift(nova);
+  estado.secoes.set(nova.id, secaoDe(nova, estado.hoje));
+}
+export async function criarProximaVez(t) {
+  const dia = proximaVez(t, estado.hoje);
+  if (!dia) return null;
+  try {
+    const nova = await dados.criarTarefa({
+      espaco_id: estado.espacoId, titulo: t.titulo, dia, parte_do_dia: t.parte_do_dia ?? null, area: t.area ?? null, subgrupo: t.subgrupo ?? null,
+      etiquetas: comSituacao(t.etiquetas, null), lentes: t.lentes || [], porque: t.porque ?? null, pronto_quando: t.pronto_quando ?? null,
+      repetir_dias: t.repetir_dias,
+    });
+    entrouNova(nova);
+    proximas.set(t.id, nova);
+    redesenhar();
+    return nova;
+  } catch (erro) { falhou(erro); return null; }   // a de hoje já acendeu; só a próxima não nasceu
+}
+// Nada se apaga: a próxima desfeita fica cancelada.
+export async function cancelarProxima(t) {
+  const nova = proximas.get(t.id);
+  if (!nova) return;
+  proximas.delete(t.id);
+  await mudar(nova, { estado: 'cancelada' });
+}
+
 export async function anotar(texto, ignorarData, extra = {}, aoCriar) {
   const lido = interpretar(texto);
   const dia = ignorarData ? null : lido.dia;
@@ -136,12 +180,8 @@ export async function anotar(texto, ignorarData, extra = {}, aoCriar) {
   mostrarEstado('Salvando…');
   try {
     const nova = await dados.criarTarefa({ espaco_id: estado.espacoId, titulo, dia, etiquetas: lido.etiquetas, ...extra });
-    nova.nova = true;
-    estado.abertasNoInicio.add(nova.id);
-    estado.lugares.set(nova.id, { area: nova.area || null, subgrupo: nova.subgrupo || null });
     aoCriar?.(nova);
-    estado.tarefas.unshift(nova);
-    estado.secoes.set(nova.id, secaoDe(nova, estado.hoje));
+    entrouNova(nova);
     redesenhar();
     mostrarEstado('Salvo ✓');
     avisar(`Anotado · ${dia ? rotuloDia(dia) : 'Caixa de entrada'}`, () => mudar(nova, { estado: 'cancelada' }, { mensagem: 'Desfeito' }));
