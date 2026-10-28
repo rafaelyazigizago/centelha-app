@@ -1,6 +1,6 @@
 // Centelha · o estado do app e as ações que mudam tarefas: tudo muda na tela na hora, grava no banco e pode ser desfeito.
 import { hojeISO, rotuloDia, interpretar } from './datas.js';
-import { secaoDe } from './calculos.js';
+import { secaoDe, situacaoDe, comSituacao } from './calculos.js';
 import * as dados from './dados.js';
 import { avisar, mostrarEstado, fagulhas, vibrar } from './ui.js';
 
@@ -20,6 +20,7 @@ export const estado = {
   lugares: new Map(),  // id → { area, subgrupo } ao carregar: a tarefa movida fica no lugar, com a marca, até recarregar
   lista: null,         // a lista aberta (subgrupo, área ou Prioridades)
   selecionando: false, // modo de escolher várias tarefas
+  segurando: false,    // no celular, o dedo segurando um cartão (pode virar arrasto)
   painel: null,        // no notebook: id da tarefa aberta no painel da direita
   carregadoEm: 0,
 };
@@ -76,6 +77,14 @@ export function alternarFeita(t, botao) {
     });
   }
   return mudar(t, { estado: 'aberta', feita_em: null, feita_por: null }, { mensagem: `Apagada · ${t.titulo}` });
+}
+
+// Em andamento e Aguardando outros (caixas do Hoje): uma etiqueta, como no Quadro. A tarefa vai para a caixa na hora.
+export function mudarSituacao(t, situacao) {
+  const nomes = { andamento: 'Em andamento', aguardando: 'Aguardando outros' };
+  const antes = [...(t.etiquetas || [])];
+  const mensagem = situacao ? `${t.titulo} → ${nomes[situacao]}` : `Saiu de ${nomes[situacaoDe(t)] || 'a situação'} · ${t.titulo}`;
+  return mudar(t, { etiquetas: comSituacao(antes, situacao) }, { mensagem, desfazer: { etiquetas: antes } });
 }
 
 export function moverPara(t, dia) {

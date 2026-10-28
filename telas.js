@@ -1,12 +1,11 @@
 // Centelha · telas Hoje, Semana e Caixa de entrada.
 import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
-import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana } from './calculos.js';
+import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
 import { ligarArrastar } from './arrastar.js';
 
-const PARTES = [['manha', 'manhã'], ['almoco', 'almoço'], ['tarde', 'tarde'], ['noite', 'noite'], [null, 'a qualquer hora']];
 const LENTES = [['dinheiro', 'Dinheiro'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];
 const dobrasAbertas = new Set();
 let abrirTarefa = () => {};
@@ -32,7 +31,7 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
   if (!semGrupo && (t.area || t.subgrupo)) marcas.push(el('span', { classe: 'marca-t' }, [t.area, t.subgrupo].filter(Boolean).join(' › ')));
   if (marca) marcas.push(el('span', { classe: 'marca-t aviso' }, marca));
 
-  const cartao = el('div', { classe: classes, 'data-id': t.id, oncontextmenu: (e) => { e.preventDefault(); abrirAcoes(t); } },
+  const cartao = el('div', { classe: classes, 'data-id': t.id, oncontextmenu: (e) => { e.preventDefault(); if (!estado.segurando) abrirAcoes(t); } },   // no celular, segurar é arrastar (arrastar.js)
     el('button', {
       type: 'button', classe: 'botao-lamp', 'aria-pressed': String(feita), 'data-mantem-aviso': true,
       'aria-label': `${feita ? 'Feita' : 'Marcar como feita'}: ${t.titulo}`, html: lampada(feita),
@@ -161,9 +160,22 @@ export function desenharHoje() {
     formAnotar(),
   ];
 
-  const prioridades = doTipo('prioridade');
-  if (prioridades.length) blocos.push(el('section', { classe: 'grupo cartao prioridades' }, el('h2', {}, 'Prioridades da semana'), lista(prioridades)));
+  // As caixas do Hoje (pedido de Rafael, 28/10): cartões separados, como na tela Prioridades, e cada tarefa numa caixa só.
+  const daCaixa = new Map(CAIXAS_DO_HOJE.map(([c]) => [c, []]));
+  for (const t of estado.tarefas) {
+    if (!visiveis(t) || !passaNasLentes(t, estado.lentes)) continue;
+    const c = caixaDoHoje(t, secao(t));
+    if (c) daCaixa.get(c).push(t);
+  }
+  const caixa = (c, nome, opcoes = {}) => {
+    const tarefas = daCaixa.get(c).sort(ordemNaCaixa);
+    return el('section', { classe: 'grupo caixa-hoje' + (tarefas.length ? '' : ' vazia'), 'data-caixa-hoje': c },
+      el('h2', {}, c === 'prioridades' ? el('span', { html: icone('estrela', 'estrela-titulo') }) : null, nome, el('span', { classe: 'n' }, String(tarefas.length))),
+      listaDaCaixa(c, tarefas, opcoes));
+  };
+  const nomes = Object.fromEntries(CAIXAS_DO_HOJE);
 
+  blocos.push(caixa('prioridades', nomes.prioridades));
   blocos.push(el('div', { classe: 'lentes', role: 'group', 'aria-label': 'Lentes' }, LENTES.map(([chave, nome]) => el('button', {
     type: 'button', classe: 'pilula', 'aria-pressed': String(estado.lentes.has(chave)), html: `${icone(chave)}${nome}`,
     onclick: () => {
@@ -173,26 +185,30 @@ export function desenharHoje() {
     },
   }))));
 
-  const doDia = doTipo('hoje');
-  const grupoHoje = el('section', { classe: 'grupo' }, el('h2', {}, 'Hoje', el('span', { classe: 'n' }, String(doDia.length))));
-  if (!doDia.length) {
-    grupoHoje.append(el('p', { classe: 'vazio' }, estado.lentes.size
+  const partes = ['manha', 'almoco', 'tarde', 'noite', 'qualquer'];
+  if (partes.every((c) => !daCaixa.get(c).length)) {
+    blocos.push(el('p', { classe: 'vazio' }, estado.lentes.size
       ? 'Nenhuma tarefa de hoje com essa lente. Abra uma tarefa para marcar as lentes dela.'
-      : 'Nada marcado para hoje. Anote acima ou traga algo da Caixa de entrada.'));
+      : 'Nada marcado para hoje. Anote acima, traga algo da Caixa de entrada ou arraste para uma das caixas.'));
   }
-  for (const [parte, nome] of PARTES) {
-    const das = doDia.filter((t) => (t.parte_do_dia || null) === parte).sort(ordenar);
-    if (das.length) grupoHoje.append(el('p', { classe: 'rotulo' }, nome), lista(das, { umToque: 'Amanhã' }));
+  for (const c of partes) blocos.push(caixa(c, nomes[c], { umToque: 'Amanhã' }));
+  for (const c of ['andamento', 'aguardando']) {
+    const tarefas = daCaixa.get(c).sort(ordemNaCaixa);
+    const d = dobra(c, nomes[c], tarefas.length, listaDaCaixa(c, tarefas));
+    d.classList.add('caixa-hoje');
+    if (!tarefas.length) d.classList.add('vazia');
+    d.dataset.caixaHoje = c;
+    blocos.push(d);
   }
-  blocos.push(grupoHoje);
 
-  const amanha = doTipo('amanha').sort(ordenar);
+  const semCaixa = (t) => !caixaDoHoje(t, secao(t));
+  const amanha = doTipo('amanha').filter(semCaixa).sort(ordenar);
   if (amanha.length) blocos.push(el('section', { classe: 'grupo' }, el('h2', {}, 'Amanhã', el('span', { classe: 'n' }, String(amanha.length))), lista(amanha, { umToque: 'Hoje' })));
 
-  const depois = doTipo('depois').sort((a, b) => a.dia.localeCompare(b.dia) || ordenar(a, b));
+  const depois = doTipo('depois').filter(semCaixa).sort((a, b) => a.dia.localeCompare(b.dia) || ordenar(a, b));
   if (depois.length) blocos.push(dobra('depois', 'Próximos dias', depois.length, lista(depois, { umToque: 'Hoje' })));
 
-  const atras = doTipo('para-tras').sort((a, b) => b.dia.localeCompare(a.dia) || ordenar(a, b));
+  const atras = doTipo('para-tras').filter(semCaixa).sort((a, b) => b.dia.localeCompare(a.dia) || ordenar(a, b));
   if (atras.length) {
     const abertas = atras.filter((t) => t.estado === 'aberta' && !estado.marcas.has(t.id));
     const recomeco = el('div', { classe: 'fileira' });
@@ -221,6 +237,15 @@ function ordenar(a, b) {
   if (pa !== pb) return pa - pb;
   return (a.hora ?? '99').localeCompare(b.hora ?? '99') || (a.criado_em || '').localeCompare(b.criado_em || '');
 }
+
+// Dentro de uma caixa do Hoje: as feitas por último; depois a ordem que você escolheu arrastando; sem ela, a de sempre.
+function ordemNaCaixa(a, b) {
+  if (a.estado !== b.estado) return a.estado === 'feita' ? 1 : -1;
+  return ((a.ordem ?? Infinity) - (b.ordem ?? Infinity)) || ordenar(a, b);
+}
+// A lista de uma caixa aceita arrastar: muda a ordem e, vinda de outra caixa, muda o dia, a parte do dia ou a situação.
+const listaDaCaixa = (c, tarefas, opcoes = {}) => el('div', { classe: 'lista', 'data-reordena': true, 'data-caixa': c },
+  tarefas.map((t) => linha(t, { estrela: true, ...opcoes })));
 
 // ---------- CAIXA DE ENTRADA ----------
 export function desenharCaixa() {

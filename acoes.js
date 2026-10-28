@@ -2,8 +2,8 @@
 // menu ⋯ (ou clique direito), "Mover para…" outro grupo ou subgrupo, estrela e a escolha de várias.
 // Nada se mexe sozinho: a tarefa movida fica no lugar, com a marca "→ destino", até a tela recarregar.
 import { somarDias } from './datas.js';
-import { agruparPorArea } from './calculos.js';
-import { estado, mudar, moverPara, alternarFeita, redesenhar, falha } from './estado.js';
+import { agruparPorArea, situacaoDe } from './calculos.js';
+import { estado, mudar, moverPara, alternarFeita, redesenhar, falha, mudarSituacao } from './estado.js';
 import * as dados from './dados.js';
 import { $, el, abrirFolha, fecharFolha, avisar, mostrarEstado, folhaAtual } from './ui.js';
 import { reordenar } from './arrastar.js';
@@ -76,6 +76,7 @@ export function abrirAcoes(t) {
       item(t.prioridade_semana ? 'Tirar a estrela' : 'Pôr estrela (prioridade da semana)', () => alternarEstrela(t)),
       t.dia !== estado.hoje && !feita ? item('Trazer para hoje', () => moverPara(t, estado.hoje)) : null,
       !feita ? item('Amanhã', () => moverPara(t, somarDias(estado.hoje, 1))) : null,
+      ...situacoes(t, item),
       ...subirDescer(t, item),
       item('Mover para outro grupo…', () => depoisDeFechar(() => abrirMover([t]))),
       item('Escolher várias', () => { selecao.add(t.id); comecarSelecao(); }),
@@ -84,10 +85,20 @@ export function abrirAcoes(t) {
   abrirFolha('folha-acoes');
 }
 
-// "Subir/Descer na lista": o mesmo que arrastar, sem arrastar (WCAG 2.5.7). Só na tela de lista.
+// Em andamento e Aguardando outros (as caixas do Hoje): pôr ou tirar com 1 toque.
+function situacoes(t, item) {
+  if (t.estado !== 'aberta') return [];
+  const agora = situacaoDe(t);
+  return [
+    agora === 'andamento' ? item('Tirar de "Em andamento"', () => mudarSituacao(t, null)) : item('Em andamento', () => mudarSituacao(t, 'andamento')),
+    agora === 'aguardando' ? item('Tirar de "Aguardando outros"', () => mudarSituacao(t, null)) : item('Aguardando outros', () => mudarSituacao(t, 'aguardando')),
+  ];
+}
+
+// "Subir/Descer na lista": o mesmo que arrastar, sem arrastar (WCAG 2.5.7). Na tela de lista e nas caixas do Hoje.
 function subirDescer(t, item) {
-  if (estado.aba !== 'lista') return [];
-  const no = document.querySelector(`#tela-lista .lista[data-reordena] > .tarefa[data-id="${CSS.escape(t.id)}"]`);
+  if (estado.aba !== 'lista' && estado.aba !== 'hoje') return [];
+  const no = document.querySelector(`#tela-${estado.aba} .lista[data-reordena] > .tarefa[data-id="${CSS.escape(t.id)}"]`);
   if (!no) return [];
   const antes = no.previousElementSibling?.classList.contains('tarefa') ? no.previousElementSibling : null;
   const depois = no.nextElementSibling?.classList.contains('tarefa') ? no.nextElementSibling : null;

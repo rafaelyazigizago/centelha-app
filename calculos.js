@@ -84,3 +84,49 @@ export function agruparPorArea(tarefas, onde = (t) => t) {
     return { nome: area, total: subgrupos.reduce((s, g) => s + g.total, 0), subgrupos };
   }).sort(ordemGrupo);
 }
+
+// ---------- O Hoje em caixas (pedido de Rafael, 28/10) ----------
+// Cada tarefa aparece numa caixa só. Em andamento e Aguardando outros valem para qualquer dia (são etiquetas,
+// como no Quadro: "em andamento" e qualquer uma que comece com "aguardando"); Prioridades, para a semana;
+// as partes do dia, para hoje. O que não cai em caixa fica nas seções de sempre (Amanhã, Próximos dias, Ficou para trás).
+export const CAIXAS_DO_HOJE = [
+  ['prioridades', 'Prioridades da semana'], ['manha', 'Manhã'], ['almoco', 'Horário do almoço'], ['tarde', 'Tarde'],
+  ['noite', 'Noite'], ['qualquer', 'A qualquer hora'], ['andamento', 'Em andamento'], ['aguardando', 'Aguardando outros'],
+];
+const EM_ANDAMENTO = /^em andamento$/i, AGUARDANDO = /^aguardando/i;
+export const PARTES_DO_DIA = ['manha', 'almoco', 'tarde', 'noite'];
+
+export function situacaoDe(t) {
+  const etiquetas = t.etiquetas || [];
+  if (etiquetas.some((e) => EM_ANDAMENTO.test(e))) return 'andamento';
+  if (etiquetas.some((e) => AGUARDANDO.test(e))) return 'aguardando';
+  return null;
+}
+
+// As etiquetas com a situação nova (ou sem nenhuma, com null). As outras etiquetas ficam como estão.
+export function comSituacao(etiquetas, situacao) {
+  const resto = (etiquetas || []).filter((e) => !EM_ANDAMENTO.test(e) && !AGUARDANDO.test(e));
+  if (situacao === 'andamento') return [...resto, 'em andamento'];
+  if (situacao === 'aguardando') return [...resto, 'aguardando'];
+  return resto;
+}
+
+// "secao" é a seção fixada ao carregar (secaoDe), para nada mudar de lugar sozinho.
+export function caixaDoHoje(t, secao) {
+  if (t.estado === 'aberta') {
+    const s = situacaoDe(t);
+    if (s) return s;
+  }
+  if (secao === 'prioridade') return 'prioridades';
+  if (secao === 'hoje') return PARTES_DO_DIA.includes(t.parte_do_dia) ? t.parte_do_dia : 'qualquer';
+  return null;
+}
+
+// O que muda numa tarefa solta noutra caixa. Prioridades só muda a ordem: não recebe nem cede tarefa.
+export function mudancaParaCaixa(t, caixa, hoje) {
+  if (caixa === 'prioridades') return null;
+  if (caixa === 'andamento' || caixa === 'aguardando') return { etiquetas: comSituacao(t.etiquetas, caixa) };
+  const patch = { dia: hoje, parte_do_dia: caixa === 'qualquer' ? null : caixa };
+  if (situacaoDe(t)) patch.etiquetas = comSituacao(t.etiquetas, null);
+  return patch;
+}

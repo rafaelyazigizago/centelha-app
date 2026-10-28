@@ -359,6 +359,16 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 /* Arrastar (Fase B, só no notebook): a linha da luz mostra onde a tarefa vai cair; o menu lateral mostra onde dá para soltar */
 .tarefa[draggable="true"] { cursor: grab; }
 .tarefa.arrastando { opacity: .45; cursor: grabbing; }
+/* Caixas do Hoje (28/10): cartões separados, como na tela Prioridades. Caixa vazia só aparece enquanto se arrasta, para receber */
+.caixa-hoje h2 .estrela-titulo { width: 22px; height: 22px; margin-right: 6px; }
+.caixa-hoje.vazia { display: none; }
+body.arrastando-tarefa .caixa-hoje.vazia { display: block; }
+body.arrastando-tarefa .caixa-hoje .lista:empty { min-height: 56px; border: 2px dashed var(--linha); border-radius: 18px; }
+.caixa-hoje.caixa-alvo { outline: 2px dashed color-mix(in srgb, var(--luz) 70%, transparent); outline-offset: 6px; border-radius: 18px; }
+/* Celular: segurar e arrastar. O cartão acompanha o dedo; o texto não é selecionado nem abre o menu do sistema */
+.tarefa { -webkit-touch-callout: none; }
+body.arrastando-tarefa { -webkit-user-select: none; user-select: none; }
+@media (max-width: 999px) { .tarefa.arrastando { opacity: .92; pointer-events: none; position: relative; z-index: 30; box-shadow: 0 10px 24px rgba(0, 0, 0, .25); } }
 .tarefa.soltar-antes::before, .tarefa.soltar-depois::after { content: ""; position: absolute; left: 10px; right: 10px; height: 4px; border-radius: 2px;
   background: var(--luz); box-shadow: 0 0 8px var(--luz); pointer-events: none; }
 .tarefa.soltar-antes::before { top: -9px; }
