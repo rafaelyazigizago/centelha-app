@@ -2,7 +2,7 @@
 // A Lista continua em tela-lista.js. As contas puras (colunas, barras) estão em calculos.js, com testes.
 import { COLUNAS_QUADRO, colunaDe, barraNaLinha, segundaDaSemana, temMarca, semanasDoMes, noDiaDoCalendario, duracaoTexto } from './calculos.js';
 import { somarDias, rotuloDia, paraISO } from './datas.js';
-import { tem0007 } from './dados.js';
+import { usavel } from './funcoes.js';
 import { estado, alternarFeita, moverPara } from './estado.js';
 import { linha, abrir } from './telas.js';
 import { el, lampada } from './ui.js';
@@ -20,8 +20,8 @@ export function quadro(tarefas, opcoes, ordem) {
 // ---------- Tabela: uma linha por tarefa; tocar no título de uma coluna ordena por ela ----------
 const NOMES_SITUACAO = { feitas: 'Feita', andamento: 'Em andamento', aguardando: 'Aguardando', afazer: 'A fazer' };
 const COLUNAS_TABELA = [['titulo', 'Tarefa'], ['dia', 'Dia'], ['grupo', 'Grupo'], ['situacao', 'Situação'], ['passos', 'Passos']];
-// Desde a 0007: projeto, tempo e energia (antes do Run de Rafael, as colunas não aparecem)
-const COLUNAS_0007 = [['projeto', 'Projeto'], ['minutos', 'Tempo'], ['energia', 'Energia']];
+// Desde a 0007, com a função ligada em "Do seu jeito": projeto, tempo e energia
+const COLUNAS_EXTRAS = [['projeto', 'Projeto', 'projetos'], ['minutos', 'Tempo', 'tempo'], ['energia', 'Energia', 'tempo']];
 const NOMES_ENERGIA = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
 const nomeProjeto = (t) => estado.projetos.find((p) => p.id === t.projeto_id)?.nome || '';
 const ordemTabela = { por: 'dia', sobe: true };
@@ -43,7 +43,8 @@ export function tabela(tarefas, redesenhar) {
     const x = VALOR[por](a), y = VALOR[por](b);
     return (x < y ? -1 : x > y ? 1 : 0) * (sobe ? 1 : -1);
   });
-  const colunas = tem0007 ? [...COLUNAS_TABELA, ...COLUNAS_0007] : COLUNAS_TABELA;
+  const extras = COLUNAS_EXTRAS.filter(([, , funcao]) => usavel(funcao)).map(([c]) => c);
+  const colunas = [...COLUNAS_TABELA, ...COLUNAS_EXTRAS.filter(([c]) => extras.includes(c))];
   const cabeca = el('tr', {}, el('th', { scope: 'col', 'aria-label': 'Feita' }), colunas.map(([chave, nome]) => el('th', {
     scope: 'col', 'aria-sort': por === chave ? (sobe ? 'ascending' : 'descending') : 'none',
   }, el('button', {
@@ -61,11 +62,9 @@ export function tabela(tarefas, redesenhar) {
       el('td', {}, grupoDe(t) || '—'),
       el('td', {}, NOMES_SITUACAO[colunaDe(t)]),
       el('td', {}, passos?.total ? `${passos.feitos} de ${passos.total}` : '—'),
-      ...(tem0007 ? [
-        el('td', {}, nomeProjeto(t) || '—'),
-        el('td', {}, t.minutos ? duracaoTexto(t.minutos * 60000) : '—'),
-        el('td', {}, NOMES_ENERGIA[t.energia] || '—'),
-      ] : []));
+      extras.includes('projeto') ? el('td', {}, nomeProjeto(t) || '—') : null,
+      extras.includes('minutos') ? el('td', {}, t.minutos ? duracaoTexto(t.minutos * 60000) : '—') : null,
+      extras.includes('energia') ? el('td', {}, NOMES_ENERGIA[t.energia] || '—') : null);
   });
   return el('div', { classe: 'tabela-rolagem' }, el('table', { classe: 'tabela-tarefas' }, el('thead', {}, cabeca), el('tbody', {}, corpo)));
 }

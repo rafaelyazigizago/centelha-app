@@ -5,7 +5,7 @@ import { agruparPorArea } from './calculos.js';
 import { estado, anotar, lugar } from './estado.js';
 import { dobra, linha } from './telas.js';
 import { $, el } from './ui.js';
-import { tem0007 } from './dados.js';
+import { usavel } from './funcoes.js';
 import { abrirCadastroEtiquetas } from './etiquetas.js';
 import { visualDoGrupo, visualDaLista, comEmoji } from './listas.js';
 
@@ -24,9 +24,9 @@ export function desenharGrupos() {
     el('p', { classe: 'data' }, 'Cada área com os seus subgrupos. Toque para abrir.'),
     el('div', { classe: 'fileira', style: 'margin-top:10px' },
       el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('todas') }, 'Ver todas numa página'),
-      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('matriz') }, 'Matriz: importante × urgente'),
+      usavel('matriz') ? el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('matriz') }, 'Matriz: importante × urgente') : null,
       el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('calendario') }, 'Calendário do mês'),
-      tem0007 ? el('button', { type: 'button', classe: 'pilula', id: 'abrir-etiquetas', onclick: abrirCadastroEtiquetas }, 'Etiquetas') : null),
+      usavel('etiquetas') ? el('button', { type: 'button', classe: 'pilula', id: 'abrir-etiquetas', onclick: abrirCadastroEtiquetas }, 'Etiquetas') : null),
     projetos(),
     grupos.length
       ? el('div', { classe: 'grupos' }, grupos.map(cartaoArea))
@@ -36,6 +36,7 @@ export function desenharGrupos() {
 
 // Projetos (0007): cada projeto ativo, com quantas abertas tem. Tocar abre a lista dele. Nasce ao escolher o projeto numa tarefa.
 function projetos() {
+  if (!usavel('projetos')) return null;
   const ativos = estado.projetos.filter((p) => !p.arquivado);
   if (!ativos.length) return null;
   const abertasDe = (id) => estado.tarefas.filter((t) => t.estado === 'aberta' && t.projeto_id === id).length;

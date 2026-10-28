@@ -6,6 +6,7 @@ import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './u
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
 import { ligarArrastar } from './arrastar.js';
 import { corDe } from './etiquetas.js';
+import { usavel } from './funcoes.js';
 
 const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];   // "Traz renda": nome novo da lente Dinheiro (28/10)
 const dobrasAbertas = new Set();
@@ -27,13 +28,13 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela, semProjeto } = {}) 
   if (t.dia && !['hoje', 'prioridade', 'amanha'].includes(secao(t)) && !marca) marcas.push(el('span', { classe: 'marca-t' }, rotuloDia(t.dia)));
   const passos = estado.passos.get(t.id);
   if (passos?.total) marcas.push(el('span', { classe: 'marca-t' }, `${passos.feitos} de ${passos.total} passos`));
-  if (t.minutos) marcas.push(el('span', { classe: 'marca-t' }, `~${duracaoTexto(t.minutos * 60000)}`));
-  const projeto = !semProjeto && t.projeto_id && estado.projetos.find((p) => p.id === t.projeto_id);
+  if (t.minutos && usavel('tempo')) marcas.push(el('span', { classe: 'marca-t' }, `~${duracaoTexto(t.minutos * 60000)}`));
+  const projeto = !semProjeto && t.projeto_id && usavel('projetos') && estado.projetos.find((p) => p.id === t.projeto_id);
   if (projeto) marcas.push(el('span', { classe: 'marca-t projeto' }, `◆ ${projeto.nome}`));
   for (const [chave, nome] of LENTES) if ((t.lentes || []).includes(chave)) marcas.push(el('span', { classe: 'marca-t', html: `${icone(chave)} ${nome}` }));
   if (t.repetir_dias > 0) marcas.push(el('span', { classe: 'marca-t' }, `↻ ${REPETICOES.find(([n]) => n === t.repetir_dias)?.[1] ?? `a cada ${t.repetir_dias} dias`}`));
-  if (temMarca(t, 'importante')) marcas.push(el('span', { classe: 'marca-t importante' }, 'Importante'));
-  if (temMarca(t, 'urgente')) marcas.push(el('span', { classe: 'marca-t urgente' }, 'Urgente'));
+  if (temMarca(t, 'importante') && usavel('matriz')) marcas.push(el('span', { classe: 'marca-t importante' }, 'Importante'));
+  if (temMarca(t, 'urgente') && usavel('matriz')) marcas.push(el('span', { classe: 'marca-t urgente' }, 'Urgente'));
   if ((t.etiquetas || []).some((e) => /^ideias?$/i.test(e))) marcas.push(el('span', { classe: 'marca-t ideia' }, 'ideia'));
   for (const e of (t.etiquetas || []).filter((e) => !/^(ideias?|importante|urgente)$/i.test(e) && e !== t.subgrupo).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t etiqueta', 'data-cor': corDe(e) }, '#' + e));
   if (!semGrupo && (t.area || t.subgrupo)) marcas.push(el('span', { classe: 'marca-t' }, [t.area, t.subgrupo].filter(Boolean).join(' › ')));

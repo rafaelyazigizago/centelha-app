@@ -6,9 +6,10 @@ import { PALETA, etiquetasEmUso, mesmoNome } from './calculos.js';
 import * as dados from './dados.js';
 import { estado, redesenhar, falha } from './estado.js';
 import { $, el, abrirFolha, mostrarEstado, avisar } from './ui.js';
+import { usavel } from './funcoes.js';
 
 export const cadastroDe = (nome) => estado.etiquetas.find((x) => mesmoNome(x.nome, nome));
-export const corDe = (nome) => cadastroDe(nome)?.cor || null;
+export const corDe = (nome) => (usavel('etiquetas') ? cadastroDe(nome)?.cor || null : null);
 // Para escolher numa tarefa: as cadastradas ativas e as que já estão em uso, sem repetir.
 export function sugestoes() {
   const nomes = estado.etiquetas.filter((x) => !x.arquivada).map((x) => x.nome);

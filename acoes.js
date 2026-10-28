@@ -8,6 +8,7 @@ import * as dados from './dados.js';
 import { $, el, abrirFolha, fecharFolha, avisar, mostrarEstado, folhaAtual } from './ui.js';
 import { reordenar } from './arrastar.js';
 import { escolherChama } from './chama.js';
+import { usavel } from './funcoes.js';
 
 let abrirTarefa = () => {};
 export const aoAbrirTarefaPelasAcoes = (f) => { abrirTarefa = f; };
@@ -77,9 +78,9 @@ export function abrirAcoes(t) {
       item(t.prioridade_semana ? 'Tirar a estrela' : 'Pôr estrela (prioridade da semana)', () => alternarEstrela(t)),
       t.dia !== estado.hoje && !feita ? item('Trazer para hoje', () => moverPara(t, estado.hoje)) : null,
       !feita ? item('Amanhã', () => moverPara(t, somarDias(estado.hoje, 1))) : null,
-      !feita ? item('Focar nesta tarefa (Chama)', () => depoisDeFechar(() => escolherChama(t))) : null,
-      !feita ? item(temMarca(t, 'importante') ? 'Tirar "Importante"' : 'Importante', () => mudarMarca(t, 'importante')) : null,
-      !feita ? item(temMarca(t, 'urgente') ? 'Tirar "Urgente"' : 'Urgente', () => mudarMarca(t, 'urgente')) : null,
+      !feita && usavel('chama') ? item('Focar nesta tarefa (Chama)', () => depoisDeFechar(() => escolherChama(t))) : null,
+      !feita && usavel('matriz') ? item(temMarca(t, 'importante') ? 'Tirar "Importante"' : 'Importante', () => mudarMarca(t, 'importante')) : null,
+      !feita && usavel('matriz') ? item(temMarca(t, 'urgente') ? 'Tirar "Urgente"' : 'Urgente', () => mudarMarca(t, 'urgente')) : null,
       ...situacoes(t, item),
       ...subirDescer(t, item),
       item('Mover para outro grupo…', () => depoisDeFechar(() => abrirMover([t]))),

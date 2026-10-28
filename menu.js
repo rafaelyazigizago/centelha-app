@@ -8,6 +8,7 @@ import { $, el, icone, abrirFolha, fecharFolha } from './ui.js';
 import { ligarSoltar } from './arrastar.js';
 import { trazerParaHoje, emLote, moverGrupo } from './acoes.js';
 import { visualDoGrupo, visualDaLista, comEmoji } from './listas.js';
+import { usavel } from './funcoes.js';
 
 let ir = () => {};
 let abrirLista = () => {};
@@ -41,7 +42,7 @@ export function desenharMenu() {
     solta(comNome(item('Caixa', 'caixa', contar((t) => !t.dia), atual('caixa'), () => ir('caixa')), 'Caixa de entrada'),
       (ts) => emLote(ts, { dia: null }, { marca: '→ Caixa de entrada', mensagem: `${quantas(ts)} → Caixa de entrada` })),
     comNome(item('Todas', 'grupos', abertas.length, atual('lista', 'todas'), () => abrirLista('todas')), 'Todas'),   // a "Todas" do To Do (28/10)
-    comNome(item('Matriz', 'matriz', contar((t) => (t.etiquetas || []).some((e) => /^(importante|urgente)$/i.test(e))), atual('lista', 'matriz'), () => abrirLista('matriz')), 'Matriz'),
+    !usavel('matriz') ? null : comNome(item('Matriz', 'matriz', contar((t) => (t.etiquetas || []).some((e) => /^(importante|urgente)$/i.test(e))), atual('lista', 'matriz'), () => abrirLista('matriz')), 'Matriz'),
     comNome(item('Diário', 'diario', 0, atual('diario'), () => ir('diario')), 'Diário'),
   ];
 
@@ -64,7 +65,7 @@ export function desenharMenu() {
 
   menu.replaceChildren(
     el('p', { classe: 'marca menu-marca', html: `${icone('faisca', 'faisca')}<span>Centelha</span>` }),
-    ...fixas,
+    ...fixas.filter(Boolean),   // a função desligada (null) fica de fora, senão aparece escrito "null"
     el('p', { classe: 'menu-titulo' }, 'Grupos'),
     ...doGrupo,
     el('button', { type: 'button', classe: 'menu-item menu-nova', onclick: novaLista }, '+ Nova lista'),

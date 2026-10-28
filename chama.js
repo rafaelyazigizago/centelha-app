@@ -8,6 +8,7 @@ import { PLANOS_CHAMA, PARE_A_CADA, paradasDevidas, faltaTexto, duracaoTexto } f
 import * as dados from './dados.js';
 import { estado, anotar, alternarFeita, moverPara } from './estado.js';
 import { somarDias } from './datas.js';
+import { usavel } from './funcoes.js';
 import { $, el, vibrar, abrirFolha, fecharFolha, avisar, movimento } from './ui.js';
 
 const CHAVE = 'centelha-chama', ESCOLHAS = 'centelha-chama-escolhas';
@@ -73,7 +74,7 @@ function comecar(t, chave, pare, som) {
 export function retomarChama() {
   try { ANTIGAS.forEach((k) => localStorage.removeItem(k)); } catch { /* nada */ }
   const salvo = ler(CHAVE);
-  if (!salvo) return;
+  if (!salvo || !usavel('chama')) return;   // desligada: o foco guardado espera (até 12 h) você ligar de novo
   const t = tarefaDe(salvo.id);
   if (!t || t.estado !== 'aberta' || Date.now() - salvo.desde > VALE_ATE) { try { localStorage.removeItem(CHAVE); } catch { /* nada */ } return; }
   m = { ...salvo, titulo: t.titulo };

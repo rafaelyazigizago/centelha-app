@@ -5,7 +5,7 @@ import { segundaDaSemana } from './calculos.js';
 import * as dados from './dados.js';
 import { estado, aoMudar, fixarSecoes, falha } from './estado.js';
 import { desenharHoje, desenharSemana, desenharCaixa, aoAbrirTarefa } from './telas.js';
-import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto, tarefaAberta } from './tela-tarefa.js';
+import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto, tarefaAberta, redesenharTarefa } from './tela-tarefa.js';
 import { desenharDiario, salvarAgora, esquecerDiario, pararDeOuvir } from './tela-diario.js';
 import { desenharGrupos, aoAbrirLista } from './tela-grupos.js';
 import { abrirLista as prepararLista, desenharLista, tituloDaLista } from './tela-lista.js';
@@ -15,6 +15,7 @@ import { alternarFeita, moverPara } from './estado.js';
 import * as preferencias from './preferencias.js';
 import { ligarPet, mostrarPet, abrirConversa } from './pet.js';
 import { chamaAberta, retomarChama, fecharCartaoChama } from './chama.js';
+import { desenharFuncoes, aoMudarFuncoes } from './funcoes.js';
 import { $, el, mostrarEstado, avisar, fecharAviso, ligarAviso, abrirFolha, fecharFolha, folhaAtual, ouvir, reiniciar, movimento } from './ui.js';
 
 const ABAS = ['hoje', 'semana', 'grupos', 'caixa', 'diario'];
@@ -39,6 +40,8 @@ function desenharAtual(entrando = false) {
   estado.recem = null;   // a lâmpada nova já acendeu na lista
 }
 aoMudar(() => desenharAtual(false));
+// Uma função ligada ou desligada em "Do seu jeito" aparece ou some na hora, em todas as telas
+aoMudarFuncoes(() => { desenharAtual(false); redesenharTarefa(); });
 
 function irPara(aba, { deLado = false } = {}) {
   if (estado.aba === 'diario' && aba !== 'diario') { pararDeOuvir(); salvarAgora(); }
@@ -294,7 +297,7 @@ function ligar() {
   ligarPet();
   $('entrar').addEventListener('click', pedirLogin);
   $('ouvir-tela').addEventListener('click', ouvirTela);
-  $('abrir-ajustes').addEventListener('click', () => abrirFolha('folha-ajustes'));
+  $('abrir-ajustes').addEventListener('click', () => { desenharFuncoes(); abrirFolha('folha-ajustes'); });
   $('fechar-ajustes').addEventListener('click', () => fecharFolha('folha-ajustes'));
   $('exportar').addEventListener('click', exportar);
   $('sair').addEventListener('click', sair);

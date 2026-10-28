@@ -5,6 +5,7 @@ import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES
 import { estado, mudar, falha, criarProximaVez, cancelarProxima } from './estado.js';
 import { dobra } from './telas.js';
 import { escolherChama } from './chama.js';
+import { usavel } from './funcoes.js';
 import { cadastroDe, corDe, sugestoes, garantirCadastro, abrirCadastroEtiquetas } from './etiquetas.js';
 import * as dados from './dados.js';
 import { $, el, icone, lampada, abrirFolha, fecharFolha, mostrarEstado, avisar, contar, movimento, reiniciar, fagulhas, vibrar } from './ui.js';
@@ -78,6 +79,9 @@ export function abrirTarefa(tarefa, volta, { painel = false } = {}) {
 export function fecharTarefa() { t = null; }
 
 // Chamado quando outra ação muda a tarefa (Feita, Desfazer): só os botões de baixo mudam.
+// Uma função ligada ou desligada em "Do seu jeito" redesenha a tarefa aberta inteira
+export function redesenharTarefa() { if (t && $('tela-tarefa')?.childElementCount) desenharTarefa(); }
+
 export function atualizarTarefa() {
   if (!t || !$('tarefa-acoes')) return;
   $('tarefa-acoes').replaceWith(acoes());
@@ -101,8 +105,8 @@ function desenharTarefa() {
     tituloEditavel(),
     linhaQuando(),
     linhaLentes(),
-    linhaMarcas(),
-    t.estado === 'aberta' ? el('button', { type: 'button', classe: 'btn claro focar', id: 'focar', html: `${icone('chama')}<span>Focar nesta tarefa</span>`, onclick: () => escolherChama(t) }) : null,
+    usavel('matriz') ? linhaMarcas() : null,
+    t.estado === 'aberta' && usavel('chama') ? el('button', { type: 'button', classe: 'btn claro focar', id: 'focar', html: `${icone('chama')}<span>Focar nesta tarefa</span>`, onclick: () => escolherChama(t) }) : null,
     el('section', { classe: 'cartao importa bloco' }, campoTexto('porque', 'Por que importa', { dica: 'ex.: evita multa de R$ 480, libera 2 horas na sexta' })),
     el('section', { classe: 'cartao bloco' },
       campoTexto('parei_aqui', 'Parei aqui', { dica: 'onde você parou' }),
@@ -112,12 +116,12 @@ function desenharTarefa() {
     el('section', { classe: 'cartao bloco', id: 'tarefa-conversa' }, ...conteudoConversa()),
     dobra('tarefa-mais', 'Mais detalhes', null, [
       linhaGrupo(),
-      dados.tem0007 ? linhaProjeto() : null,
-      dados.tem0007 ? linhaEtiquetas() : null,
-      dados.tem0007 ? linhaTempo() : null,
-      dados.tem0007 ? linhaEnergia() : null,
+      usavel('projetos') ? linhaProjeto() : null,
+      usavel('etiquetas') ? linhaEtiquetas() : null,
+      usavel('tempo') ? linhaTempo() : null,
+      usavel('tempo') ? linhaEnergia() : null,
       linhaParte(),
-      linhaRepetir(),
+      usavel('repetir') ? linhaRepetir() : null,
       linhaPrioridade(),
       campoTexto('pronto_quando', 'Pronto quando', { dica: 'como você vai saber que acabou' }),
       campoTexto('notas', 'Notas', { linhas: 4 }),

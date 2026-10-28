@@ -9,7 +9,7 @@ import { dobra, linha } from './telas.js';
 import { comecarSelecao, limparSelecao } from './acoes.js';
 import { $, el, icone } from './ui.js';
 import { quadro, tabela, linhaDoTempo, calendario } from './visoes.js';
-import { tem0007 } from './dados.js';
+import { usavel } from './funcoes.js';
 import { visualDoGrupo, visualDaLista, comEmoji, abrirVisual } from './listas.js';
 
 const abertas = new Set();
@@ -109,15 +109,18 @@ function desenharTodas(L, tela, ativas, concluidas, opcoes) {
 
 // ---------- Ver por tipos (28/10, como no Vikunja): Lista · Quadro · Tabela · Linha do tempo ----------
 // A escolha fica guardada neste aparelho, para cada lista (como o resto de "Do seu jeito").
-const VISOES = [['lista', 'Lista'], ['quadro', 'Quadro'], ['tabela', 'Tabela'], ['linha', 'Linha do tempo'], ['calendario', 'Calendário']];
+// A Lista vem sempre; as outras, só ligadas em "Do seu jeito" (28/10)
+const TODAS_VISOES = [['lista', 'Lista'], ['quadro', 'Quadro'], ['tabela', 'Tabela'], ['linha', 'Linha do tempo'], ['calendario', 'Calendário']];
+const visoesLigadas = () => TODAS_VISOES.filter(([v]) => v === 'lista' || usavel(v));
 const chaveVisao = (L) => `centelha-visao|${L.tipo}|${L.area ?? ''}|${L.subgrupo ?? ''}`;
 function visaoDe(L) {
   if (L.tipo === 'calendario') return 'calendario';   // a lista "Calendário" do menu é sempre o calendário
-  try { const v = localStorage.getItem(chaveVisao(L)); return VISOES.some(([k]) => k === v) ? v : 'lista'; } catch { return 'lista'; }
+  try { const v = localStorage.getItem(chaveVisao(L)); return visoesLigadas().some(([k]) => k === v) ? v : 'lista'; } catch { return 'lista'; }
 }
 function trocaDeVisao(L) {
-  const atual = visaoDe(L);
-  return el('div', { classe: 'fileira visoes', role: 'group', 'aria-label': 'Ver como' }, VISOES.map(([v, nome]) => el('button', {
+  const atual = visaoDe(L), ligadas = visoesLigadas();
+  if (ligadas.length < 2) return null;   // só a Lista: nada para escolher
+  return el('div', { classe: 'fileira visoes', role: 'group', 'aria-label': 'Ver como' }, ligadas.map(([v, nome]) => el('button', {
     type: 'button', classe: 'pilula', 'aria-pressed': String(v === atual),
     onclick: () => { try { localStorage.setItem(chaveVisao(L), v); } catch { /* sem guardar: vale só agora */ } desenharLista(); },
   }, nome)));
@@ -126,7 +129,7 @@ const nomeDoProjeto = (id) => estado.projetos.find((p) => p.id === id)?.nome ?? 
 const tituloDe = (L) => (L.tipo === 'calendario' ? 'Calendário' : L.tipo === 'todas' ? 'Todas' : L.tipo === 'matriz' ? 'Matriz' : L.tipo === 'prioridades' ? 'Prioridades da semana'
   : L.tipo === 'projeto' ? nomeDoProjeto(L.area) : L.tipo === 'area' ? comEmoji(L.area, visualDoGrupo(L.area)) : comEmoji(L.subgrupo ?? 'Sem subgrupo', visualDaLista(L.area, L.subgrupo)));
 // Emoji e cor (0007): no grupo e nas listas com nome
-const podeVisual = (L) => tem0007 && !!L.area && (L.tipo === 'area' || (L.tipo === 'sub' && !!L.subgrupo));
+const podeVisual = (L) => usavel('visual') && !!L.area && (L.tipo === 'area' || (L.tipo === 'sub' && !!L.subgrupo));
 export const tituloDaLista = (L) => (L ? tituloDe(L) : 'Lista');
 const acimaDe = (L) => (L.tipo === 'calendario' ? 'As tarefas de cada dia' : L.tipo === 'todas' ? 'Todas as tarefas abertas, por grupo' : L.tipo === 'projeto' ? 'Projeto'
   : L.tipo === 'sub' ? L.area : L.tipo === 'area' ? 'Grupo inteiro' : 'Tarefas com estrela');

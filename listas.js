@@ -5,14 +5,15 @@ import * as dados from './dados.js';
 import { estado, redesenhar, falha } from './estado.js';
 import { $, el, abrirFolha, mostrarEstado, avisar } from './ui.js';
 import { paleta } from './etiquetas.js';
+import { usavel } from './funcoes.js';
 
 // Os emojis do To Do de Rafael (print de 28/10) e mais alguns
 const SUGESTOES = ['💪', '🖥️', '❤️', '💫', '💡', '⚒️', '🛒', '🔐', '🏢', '📚', '💼', '🏠', '🌱', '🎯', '💰', '✈️', '🧠', '🎨'];
 
 const achar = (area, sub) => estado.listas.find((x) => x.area === area && x.subgrupo === sub) || null;
-export const visualDoGrupo = (area) => (area ? achar(area, '') : null);
+export const visualDoGrupo = (area) => (area && usavel('visual') ? achar(area, '') : null);
 // "Sem subgrupo" não tem visual próprio (e não pega o do grupo)
-export const visualDaLista = (area, subgrupo) => (area && subgrupo ? achar(area, subgrupo) : null);
+export const visualDaLista = (area, subgrupo) => (area && subgrupo && usavel('visual') ? achar(area, subgrupo) : null);
 const visualDe = (area, subgrupo) => (subgrupo ? visualDaLista(area, subgrupo) : visualDoGrupo(area));
 // O nome com o emoji na frente, quando houver
 export const comEmoji = (nome, v) => (v?.emoji ? `${v.emoji} ${nome}` : nome);
