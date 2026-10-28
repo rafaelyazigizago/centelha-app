@@ -109,9 +109,9 @@ export function mudarMarca(t, marca) {
 }
 
 export function moverPara(t, dia) {
-  const rotulo = dia ? rotuloDia(dia) : 'Caixa de entrada';
+  const rotulo = dia ? rotuloDia(dia) : 'Sem dia';
   return mudar(t, { dia }, {
-    mensagem: `Vai para ${dia ? rotulo.toLowerCase() : 'a Caixa de entrada'} · ${t.titulo}`,
+    mensagem: `${dia ? `Vai para ${rotulo.toLowerCase()}` : 'Fica sem dia'} · ${t.titulo}`,
     desfazer: { dia: t.dia, vezes_adiada: t.vezes_adiada },
     marca: `→ ${rotulo}`,
   });
@@ -140,7 +140,7 @@ export async function recomecar(lista) {
   });
 }
 
-// Anotar: "amanhã", "sexta", "24/10" viram o dia; "#casa" vira etiqueta; sem dia vai para a Caixa.
+// Anotar: "amanhã", "sexta", "24/10" viram o dia; "#casa" vira etiqueta; sem dia fica sem dia (em Todas, filtro "Sem dia").
 // "extra" leva a área e o subgrupo quando se anota dentro de um grupo.
 // Repetir (28/10): ao acender uma tarefa que repete, nasce a próxima vez, com o mesmo título, grupo, marcas e porquê.
 // A situação (em andamento, aguardando) não vai junto: a próxima começa do zero.
@@ -187,7 +187,7 @@ export async function anotar(texto, ignorarData, extra = {}, aoCriar) {
     entrouNova(nova);
     redesenhar();
     mostrarEstado('Salvo ✓');
-    avisar(`Anotado · ${dia ? rotuloDia(dia) : 'Caixa de entrada'}`, () => mudar(nova, { estado: 'cancelada' }, { mensagem: 'Desfeito' }));
+    avisar(`Anotado · ${dia ? rotuloDia(dia) : 'sem dia'}`, () => mudar(nova, { estado: 'cancelada' }, { mensagem: 'Desfeito' }));
     return nova;
   } catch (erro) {
     falhou(erro);

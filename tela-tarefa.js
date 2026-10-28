@@ -173,7 +173,7 @@ function linhaQuando() {
   if (dia && dia !== hoje && dia !== amanha) outro.value = dia;
   outro.addEventListener('change', () => { if (outro.value) mudarDia(alvo, outro.value); });
   return el('div', { classe: 'campo', id: 'tarefa-quando' },
-    el('span', { classe: 'rot' }, el('span', {}, 'Quando'), el('span', {}, dia ? rotuloDia(dia) : 'Caixa de entrada')),
+    el('span', { classe: 'rot' }, el('span', {}, 'Quando'), el('span', {}, dia ? rotuloDia(dia) : 'Sem dia')),
     el('div', { classe: 'fileira' },
       pilula('Hoje', dia === hoje, () => mudarDia(alvo, hoje)),
       pilula('Amanhã', dia === amanha, () => mudarDia(alvo, amanha)),
@@ -184,11 +184,11 @@ function linhaQuando() {
 async function mudarDia(alvo, dia) {
   const antes = alvo.dia || null, vezes = alvo.vezes_adiada;
   if (antes === dia) return;
-  const rotulo = dia ? rotuloDia(dia) : 'Caixa de entrada';
+  const rotulo = dia ? rotuloDia(dia) : 'Sem dia';
   const ok = await gravarEm(alvo, { dia }, { marca: `→ ${rotulo}` });
   if (t === alvo) $('tarefa-quando')?.replaceWith(linhaQuando());
   if (ok) {
-    avisar(`Vai para ${dia ? rotulo.toLowerCase() : 'a Caixa de entrada'}`, async () => {
+    avisar(dia ? `Vai para ${rotulo.toLowerCase()}` : 'Fica sem dia', async () => {
       estado.marcas.delete(alvo.id);
       await gravarEm(alvo, { dia: antes, vezes_adiada: vezes });
       if (t === alvo) $('tarefa-quando')?.replaceWith(linhaQuando());

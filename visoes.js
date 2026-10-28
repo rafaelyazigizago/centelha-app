@@ -4,7 +4,7 @@ import { COLUNAS_QUADRO, colunaDe, barraNaLinha, segundaDaSemana, temMarca, sema
 import { somarDias, rotuloDia, paraISO } from './datas.js';
 import { usavel } from './funcoes.js';
 import { estado, alternarFeita, moverPara } from './estado.js';
-import { linha, abrir } from './telas.js';
+import { linha, abrir, irParaSemDia } from './telas.js';
 import { el, lampada } from './ui.js';
 
 // ---------- Quadro (Kanban): A fazer · Em andamento · Aguardando · Feitas. Arrastar entre colunas muda a situação ----------
@@ -143,7 +143,7 @@ export function calendario(tarefas, opcoes, redesenhar) {
       doEscolhido.length
         ? el('div', { classe: 'lista', 'data-reordena': true, 'data-dia-lista': diaCal }, doEscolhido.map((t) => linha(t, opcoes)))
         : el('p', { classe: 'vazio' }, 'Nada marcado para este dia. Arraste uma tarefa para cá, ou escolha este dia na tarefa aberta.')),
-    semDia ? el('p', { classe: 'ajuda' }, `${semDia} sem dia, na Caixa de entrada`) : null);
+    semDia ? el('button', { type: 'button', classe: 'link-leve', onclick: irParaSemDia }, `${semDia} sem dia: ver em Todas`) : null);
 }
 
 // Soltar uma tarefa arrastada num dia do calendário muda a data dela (com aviso e Desfazer, como sempre).

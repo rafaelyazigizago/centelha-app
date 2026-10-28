@@ -47,7 +47,7 @@ export function rotuloDia(iso, agora = new Date()) {
 const SEM_ACENTO = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 // Procura uma data no texto e devolve { titulo, dia, palavraData, etiquetas }.
-// dia = null quando não há data (a tarefa vai para a Caixa de entrada).
+// dia = null quando não há data (a tarefa fica sem dia; em Todas, filtro "Sem dia").
 export function interpretar(texto, agora = new Date()) {
   const hoje = hojeISO(agora);
   let resto = ` ${texto.trim()} `;

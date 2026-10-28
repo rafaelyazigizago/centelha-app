@@ -4,11 +4,11 @@ import { hojeISO, deISO } from './datas.js';
 import { segundaDaSemana } from './calculos.js';
 import * as dados from './dados.js';
 import { estado, aoMudar, fixarSecoes, falha } from './estado.js';
-import { desenharHoje, desenharSemana, desenharCaixa, aoAbrirTarefa } from './telas.js';
+import { desenharHoje, desenharSemana, aoAbrirTarefa, aoTrocarCalendario, aoAbrirSemDia } from './telas.js';
 import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto, tarefaAberta, redesenharTarefa } from './tela-tarefa.js';
 import { desenharDiario, salvarAgora, esquecerDiario, pararDeOuvir } from './tela-diario.js';
 import { desenharGrupos, aoAbrirLista } from './tela-grupos.js';
-import { abrirLista as prepararLista, desenharLista, tituloDaLista } from './tela-lista.js';
+import { abrirLista as prepararLista, desenharLista, tituloDaLista, filtrarSemDia } from './tela-lista.js';
 import { desenharMenu, ligarMenu } from './menu.js';
 import { aoAbrirTarefaPelasAcoes, abrirMover, alternarEstrela, limparSelecao, selecao } from './acoes.js';
 import { alternarFeita, moverPara } from './estado.js';
@@ -18,9 +18,14 @@ import { chamaAberta, retomarChama, fecharCartaoChama } from './chama.js';
 import { desenharFuncoes, aoMudarFuncoes } from './funcoes.js';
 import { $, el, mostrarEstado, avisar, fecharAviso, ligarAviso, abrirFolha, fecharFolha, folhaAtual, ouvir, reiniciar, movimento } from './ui.js';
 
-const ABAS = ['hoje', 'semana', 'grupos', 'caixa', 'diario'];
-const TELAS = [...ABAS, 'lista', 'tarefa'];
-const NOMES = { hoje: 'Hoje', semana: 'Semana', grupos: 'Grupos', caixa: 'Caixa', diario: 'Diário', lista: 'Lista' };
+// O mapa (lote 42, 28/10): o mesmo no celular e no notebook. Hoje · Listas · Calendário · Diário. A Caixa de entrada saiu
+// (Rafael: "eu não vejo a necessidade de Caixa de Entrada se já temos Hoje, Semana, Todas, Prioridades"): o que não tem dia
+// fica em Todas, com o filtro "Sem dia". O Calendário junta a Semana e o Mês.
+const ABAS = ['hoje', 'grupos', 'calendario', 'diario'];   // os botões da barra de baixo, nesta ordem
+const TELAS = ['hoje', 'grupos', 'semana', 'diario', 'lista', 'tarefa'];
+const NOMES = { hoje: 'Hoje', semana: 'Calendário', grupos: 'Listas', diario: 'Diário', lista: 'Lista' };
+// Qual botão da barra fica aceso em cada tela
+const naBarra = (aba) => (aba === 'semana' || (aba === 'lista' && estado.lista?.tipo === 'calendario') ? 'calendario' : aba === 'lista' ? 'grupos' : aba);
 // No notebook (tela larga), o formato do Microsoft To Do: menu lateral, lista e a tarefa no painel da direita.
 const largo = matchMedia('(min-width: 1000px)');
 const RECARREGAR_DEPOIS_MS = 30 * 60 * 1000;
@@ -35,7 +40,6 @@ function desenharAtual(entrando = false) {
   else if (estado.aba === 'lista') desenharLista();
   else if (estado.aba === 'semana') desenharSemana(entrando);
   else if (estado.aba === 'grupos') desenharGrupos();
-  else if (estado.aba === 'caixa') desenharCaixa();
   else if (estado.aba === 'diario') desenharDiario();
   estado.recem = null;   // a lâmpada nova já acendeu na lista
 }
@@ -55,9 +59,9 @@ function irPara(aba, { deLado = false } = {}) {
   tela.classList.add('ativa');
   if (deLado) tela.classList.add('de-lado');
 
-  const i = ABAS.indexOf(aba);
+  const acesa = naBarra(aba), i = ABAS.indexOf(acesa);
   document.querySelectorAll('#abas .aba').forEach((b) => {
-    if (b.dataset.aba === aba) { b.setAttribute('aria-current', 'page'); reiniciar(b, 'pulou'); } else b.removeAttribute('aria-current');
+    if (b.dataset.aba === acesa) { if (b.getAttribute('aria-current') !== 'page') reiniciar(b, 'pulou'); b.setAttribute('aria-current', 'page'); } else b.removeAttribute('aria-current');
   });
   if (i >= 0) $('luzinha').style.transform = `translateX(${i * 100}%)`;
   $('ouvir-tela').hidden = !('speechSynthesis' in window) || aba === 'diario';
@@ -94,14 +98,27 @@ aoAbrirTarefaPelasAcoes(abrirNaTela);
 aoVoltar(() => (estado.painel ? fecharPainel() : irPara(abaDeVolta)));
 
 // Abrir uma lista (subgrupo, área ou Prioridades) a partir do menu lateral ou da aba Grupos.
-function abrirLista(tipo, area = null, subgrupo = null) {
+// O Calendário abre no jeito que você usou por último: Semana (o varal) ou Mês. A troca fica guardada neste aparelho.
+const MODO_CALENDARIO = 'centelha-calendario-modo';
+function abrirCalendario(modo) {
+  if (modo) { try { localStorage.setItem(MODO_CALENDARIO, modo); } catch { /* sem guardar: vale só agora */ } }
+  else { try { modo = localStorage.getItem(MODO_CALENDARIO); } catch { modo = null; } }
+  if (modo === 'mes') abrirLista('calendario'); else irPara('semana');
+}
+aoTrocarCalendario(abrirCalendario);
+// "Sem dia" (o que era a Caixa de entrada): Todas, só com as tarefas sem dia
+function abrirSemDia() { abrirLista('todas', null, null, { semDia: true }); }
+aoAbrirSemDia(abrirSemDia);
+
+function abrirLista(tipo, area = null, subgrupo = null, { semDia = false } = {}) {
+  if (tipo === 'todas') filtrarSemDia(semDia);
   fecharPainel();
   limparSelecao();
   prepararLista(tipo, area, subgrupo);
   NOMES.lista = tipo === 'prioridades' ? 'Prioridades' : tituloDaLista(estado.lista);   // o voltar da tarefa diz de onde ela veio
   irPara('lista');
 }
-ligarMenu((aba) => irPara(aba), abrirLista);
+ligarMenu((aba) => (aba === 'calendario' ? abrirCalendario() : irPara(aba)), abrirLista);
 aoAbrirLista(abrirLista);
 
 // Tela larga ↔ estreita no meio do uso: a tarefa aberta muda de lugar sem se perder.
@@ -303,7 +320,7 @@ function ligar() {
   $('sair').addEventListener('click', sair);
   const versao = $('versao-app');   // página velha guardada pode não ter esta linha: o app não quebra por isso
   if (versao) versao.textContent = `Versão do app: ${self.VERSAO_APP || 'dev'}`;
-  document.querySelectorAll('#abas .aba').forEach((b) => b.addEventListener('click', () => irPara(b.dataset.aba)));
+  document.querySelectorAll('#abas .aba').forEach((b) => b.addEventListener('click', () => (b.dataset.aba === 'calendario' ? abrirCalendario() : irPara(b.dataset.aba))));
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {

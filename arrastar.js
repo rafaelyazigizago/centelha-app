@@ -1,5 +1,5 @@
 // Centelha · arrastar no notebook (Fase B do formato Microsoft To Do, docs/pesquisa/ESTUDO-MICROSOFT-TODO-2026-10-21.md):
-// segurar e arrastar muda a ordem na lista; soltar num item do menu lateral move, traz para hoje, põe estrela ou manda para a Caixa.
+// segurar e arrastar muda a ordem na lista; soltar num item do menu lateral move, traz para hoje ou põe estrela.
 // Sempre há o outro jeito, sem arrastar (WCAG 2.5.7): "Subir/Descer na lista" e "Mover para…" no ⋯.
 // No Hoje (lote de 28/10), arrastar também passa a tarefa de uma caixa para outra; no celular, segurando o cartão (Fase C).
 import { estado, secao, redesenhar, falha } from './estado.js';

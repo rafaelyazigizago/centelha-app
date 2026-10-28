@@ -1,10 +1,11 @@
-// Centelha · aba "Grupos", no jeito do Microsoft To Do (escolha de Rafael, 21/10): Área → subgrupo → tarefas.
+// Centelha · aba "Listas" (antes "Grupos"; nome novo no lote 42), no jeito do Microsoft To Do (escolha de Rafael, 21/10): Área → subgrupo → tarefas.
+// Em cima, Todas e Prioridades; depois os Projetos; no fim, as Etiquetas (com as funções ligadas).
 // Cada área e cada subgrupo é uma dobra. A área aberta mostra os seus subgrupos; "Abrir todos" mostra todas as tarefas dela.
 // Entram as tarefas abertas ao carregar (e as anotadas depois): a feita fica no lugar, riscada, até recarregar.
 import { agruparPorArea } from './calculos.js';
 import { estado, anotar, lugar } from './estado.js';
 import { dobra, linha } from './telas.js';
-import { $, el } from './ui.js';
+import { $, el, icone } from './ui.js';
 import { usavel } from './funcoes.js';
 import { abrirCadastroEtiquetas } from './etiquetas.js';
 import { visualDoGrupo, visualDaLista, comEmoji } from './listas.js';
@@ -20,17 +21,17 @@ export function desenharGrupos() {
   const tarefas = estado.tarefas.filter((t) => t.estado !== 'cancelada' && estado.abertasNoInicio.has(t.id));
   const grupos = agruparPorArea(tarefas, lugar);   // a tarefa movida fica no lugar, com a marca, até recarregar
   tela.replaceChildren(...[   // o que não existe (null) fica de fora, senão aparece escrito "null"
-    el('h1', { id: 'titulo-grupos' }, 'Grupos'),
-    el('p', { classe: 'data' }, 'Cada área com os seus subgrupos. Toque para abrir.'),
+    el('h1', { id: 'titulo-grupos' }, 'Listas'),
+    el('p', { classe: 'data' }, 'Onde as suas tarefas moram: os grupos, as listas e os projetos.'),
     el('div', { classe: 'fileira', style: 'margin-top:10px' },
-      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('todas') }, 'Ver todas numa página'),
-      usavel('matriz') ? el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('matriz') }, 'Matriz: importante × urgente') : null,
-      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('calendario') }, 'Calendário do mês'),
-      usavel('etiquetas') ? el('button', { type: 'button', classe: 'pilula', id: 'abrir-etiquetas', onclick: abrirCadastroEtiquetas }, 'Etiquetas') : null),
+      el('button', { type: 'button', classe: 'pilula', id: 'abrir-todas', onclick: () => abrirLista('todas') }, `Todas · ${tarefas.filter((t) => t.estado === 'aberta').length}`),
+      el('button', { type: 'button', classe: 'pilula', id: 'abrir-prioridades', html: `${icone('estrela')}<span>Prioridades · ${estado.tarefas.filter((t) => t.estado === 'aberta' && t.prioridade_semana).length}</span>`, onclick: () => abrirLista('prioridades') })),
     projetos(),
     grupos.length
       ? el('div', { classe: 'grupos' }, grupos.map(cartaoArea))
       : el('p', { classe: 'vazio' }, 'Nenhuma tarefa aberta. O que você anotar aparece aqui, na área dela.'),
+    usavel('etiquetas') ? el('section', { classe: 'projetos-grupos' }, el('p', { classe: 'rotulo' }, 'etiquetas'),
+      el('button', { type: 'button', classe: 'pilula', id: 'abrir-etiquetas', onclick: abrirCadastroEtiquetas }, 'Cadastrar e dar cor')) : null,
   ].filter(Boolean));
 }
 

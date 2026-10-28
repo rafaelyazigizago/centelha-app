@@ -1,7 +1,7 @@
 // Centelha · a Chama, o foco com tempo (FZ8 + FZ7; 28/10, Rafael: "O Centelha terá algo estilo pomodoro?"; o nome "Chama",
 // no lugar de "Mergulho", é dele: a centelha vira chama quando você se dedica). Um bloco de foco numa tarefa só, com a tela
 // inteira para ela. O tempo aparece em minutos, nunca a hora, e o fim não corta nada: avisa com calma e pergunta o que fazer.
-// De 25 em 25 min, a pausa "PARE: qual é a meta agora?" (CI1, prova forte). Lembrou de outra coisa? Anota, vai para a Caixa, e o
+// De 25 em 25 min, a pausa "PARE: qual é a meta agora?" (CI1, prova forte). Lembrou de outra coisa? Anota (sem dia), e o
 // foco segue (CI4). Sair pergunta como: só sair, amanhã ou outro dia (as saídas do Modo Túnel, FZ7, que entrou aqui).
 // Fica guardado neste aparelho: se a página recarregar, o foco volta de onde estava. Nada vai para o banco.
 import { PLANOS_CHAMA, PARE_A_CADA, paradasDevidas, faltaTexto, duracaoTexto } from './calculos.js';

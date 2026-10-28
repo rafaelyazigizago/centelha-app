@@ -393,8 +393,8 @@ body.focando { overflow: hidden; }
 .abas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: color-mix(in srgb, var(--fundo) 90%, transparent);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--linha);
   padding: 8px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
-.abas .trilho { max-width: 40rem; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); position: relative; }
-.abas .luzinha { position: absolute; top: 0; left: 0; width: 20%; height: 100%; display: grid; place-items: center; transition: transform calc(.4s * var(--t)) var(--mola); pointer-events: none; }
+.abas .trilho { max-width: 40rem; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); position: relative; }
+.abas .luzinha { position: absolute; top: 0; left: 0; width: 25%; height: 100%; display: grid; place-items: center; transition: transform calc(.4s * var(--t)) var(--mola); pointer-events: none; }
 .abas .luzinha::before { content: ""; width: 74%; height: 100%; border-radius: 16px; background: color-mix(in srgb, var(--luz) 26%, transparent); }
 .aba { min-height: 58px; border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   font-size: .9rem; color: var(--suave); position: relative; z-index: 1; }

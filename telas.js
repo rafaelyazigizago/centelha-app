@@ -1,4 +1,4 @@
-// Centelha · telas Hoje, Semana e Caixa de entrada.
+// Centelha · telas Hoje e Semana (no Calendário) e os botões de dia (o que era a Caixa de entrada).
 import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
 import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo, temMarca, REPETICOES, duracaoTexto } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
@@ -7,6 +7,7 @@ import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.j
 import { ligarArrastar } from './arrastar.js';
 import { corDe } from './etiquetas.js';
 import { usavel } from './funcoes.js';
+import { matrizQuadros } from './tela-lista.js';
 
 const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];   // "Traz renda": nome novo da lente Dinheiro (28/10)
 const dobrasAbertas = new Set();
@@ -153,7 +154,7 @@ function formAnotar() {
       partes.push(`Vai para: ${rotuloDia(lido.dia)}`);
       partes.push(el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => { ignorarData = true; mostrar(); } }, `"${lido.palavraData}" não é data`));
     } else {
-      partes.push('Vai para: Caixa de entrada');
+      partes.push('Fica sem dia (em Todas)');
       if (lido.dia) partes.push(el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => { ignorarData = false; mostrar(); } }, `Usar "${lido.palavraData}"`));
     }
     if (lido.etiquetas.length) partes.splice(1, 0, ` · ${lido.etiquetas.map((e) => '#' + e).join(' ')}`);
@@ -175,6 +176,12 @@ function formAnotar() {
 }
 
 // ---------- HOJE ----------
+// Do dia | Matriz: só aparece com a Matriz ligada em "Do seu jeito"
+let modoHoje = 'dia';
+const trocaDoHoje = () => (usavel('matriz') ? el('div', { classe: 'fileira visoes', role: 'group', 'aria-label': 'Ver o Hoje como' }, [['dia', 'Do dia'], ['matriz', 'Matriz']].map(([m, nome]) => el('button', {
+  type: 'button', classe: 'pilula', 'aria-pressed': String(modoHoje === m), onclick: () => { modoHoje = m; desenharHoje(); },
+}, nome))) : null);
+
 export function desenharHoje() {
   const tela = $('tela-hoje');
   const doTipo = (s) => estado.tarefas.filter((t) => visiveis(t) && secao(t) === s && passaNasLentes(t, estado.lentes));
@@ -185,6 +192,7 @@ export function desenharHoje() {
     ...varalMini(),
     formAnotar(),
     resumo(),
+    trocaDoHoje(),
   ];
 
   // As caixas do Hoje (pedido de Rafael, 28/10): cartões separados, como na tela Prioridades, e cada tarefa numa caixa só.
@@ -195,6 +203,13 @@ export function desenharHoje() {
     const c = caixaDoHoje(t, secao(t));
     if (c && t.estado === 'feita' && !estado.abertasNoInicio.has(t.id)) feitasAntes.push(t);
     else if (c) daCaixa.get(c).push(t);
+  }
+  // A Matriz (lote 42): um jeito de ver o Hoje. As tarefas abertas de hoje nos 4 quadros; arrastar troca as marcas.
+  if (usavel('matriz') && modoHoje === 'matriz') {
+    const doDia = [...daCaixa.values()].flat().filter((t) => t.estado === 'aberta');
+    blocos.push(el('p', { classe: 'ajuda' }, 'As tarefas de hoje nos 4 quadros. Arraste para outro quadro, ou use o ⋯, para trocar as marcas.'), matrizQuadros(doDia, { estrela: true }));
+    tela.replaceChildren(...blocos.filter(Boolean));
+    return;
   }
   const caixa = (c, nome, opcoes = {}) => {
     const tarefas = daCaixa.get(c).sort(ordemNaCaixa);
@@ -218,7 +233,7 @@ export function desenharHoje() {
   if (partes.every((c) => !daCaixa.get(c).length)) {
     blocos.push(el('p', { classe: 'vazio' }, estado.lentes.size
       ? 'Nenhuma tarefa de hoje com essa lente. Abra uma tarefa para marcar as lentes dela.'
-      : 'Nada marcado para hoje. Anote acima, traga algo da Caixa de entrada ou arraste para uma das caixas.'));
+      : 'Nada marcado para hoje. Anote acima, traga algo de Todas (o filtro "Sem dia") ou arraste para uma das caixas.'));
   }
   for (const c of partes) blocos.push(caixa(c, nomes[c], { umToque: 'Amanhã' }));
   for (const c of ['andamento', 'aguardando']) {
@@ -282,29 +297,29 @@ function ordemNaCaixa(a, b) {
 const listaDaCaixa = (c, tarefas, opcoes = {}) => el('div', { classe: 'lista', 'data-reordena': true, 'data-caixa': c },
   tarefas.map((t) => linha(t, { estrela: true, ...opcoes })));
 
-// ---------- CAIXA DE ENTRADA ----------
-export function desenharCaixa() {
-  const tela = $('tela-caixa');
-  const daCaixa = estado.tarefas.filter((t) => visiveis(t) && t.estado === 'aberta' && secao(t) === 'caixa');
-  const linhas = daCaixa.map((t) => {
-    const no = linha(t);
-    if (estado.marcas.has(t.id)) return no;
-    const escolher = el('input', { type: 'date', 'aria-label': `Outro dia para ${t.titulo}`, hidden: true,
-      onchange: (e) => { if (e.target.value) moverPara(t, e.target.value); } });
-    no.append(el('div', { classe: 'fileira', style: 'width:100%;padding-left:58px' },
-      el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => moverPara(t, estado.hoje) }, 'Hoje'),
-      el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => moverPara(t, somarDias(estado.hoje, 1)) }, 'Amanhã'),
-      el('button', { type: 'button', classe: 'pilula', onclick: () => { escolher.hidden = false; try { escolher.showPicker?.(); } catch { /* sem seletor: o campo fica à vista */ } escolher.focus(); } }, 'Outro dia'),
-      escolher));
-    no.style.flexWrap = 'wrap';
-    return no;
-  });
-  tela.replaceChildren(
-    el('h1', { id: 'titulo-caixa' }, 'Caixa de entrada'),
-    el('p', { classe: 'data' }, 'Esperando um dia. Escolha com um toque ou deixe aqui.'),
-    daCaixa.length ? el('div', { classe: 'lista', style: 'margin-top:16px' }, linhas)
-      : el('p', { classe: 'vazio', style: 'margin-top:16px' }, 'Vazia. O que você anotar sem dia aparece aqui.'),
-  );
+// ---------- Os botões de dia: o que era a Caixa de entrada (desde o lote 42, em Todas, com o filtro "Sem dia") ----------
+export function comBotoesDeDia(no, t) {
+  if (estado.marcas.has(t.id) || t.estado !== 'aberta' || t.dia) return no;
+  const escolher = el('input', { type: 'date', 'aria-label': `Outro dia para ${t.titulo}`, hidden: true,
+    onchange: (e) => { if (e.target.value) moverPara(t, e.target.value); } });
+  no.append(el('div', { classe: 'fileira botoes-dia' },
+    el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => moverPara(t, estado.hoje) }, 'Hoje'),
+    el('button', { type: 'button', classe: 'pilula', 'data-mantem-aviso': true, onclick: () => moverPara(t, somarDias(estado.hoje, 1)) }, 'Amanhã'),
+    el('button', { type: 'button', classe: 'pilula', onclick: () => { escolher.hidden = false; try { escolher.showPicker?.(); } catch { /* sem seletor: o campo fica à vista */ } escolher.focus(); } }, 'Outro dia'),
+    escolher));
+  no.style.flexWrap = 'wrap';
+  return no;
+}
+
+// ---------- Calendário: Semana | Mês (lote 42). A troca e o "Sem dia" são abertos pelo app.js ----------
+let trocarCalendario = () => {}, abrirSemDia = () => {};
+export const aoTrocarCalendario = (f) => { trocarCalendario = f; };
+export const aoAbrirSemDia = (f) => { abrirSemDia = f; };
+export const irParaSemDia = () => abrirSemDia();
+export function trocaDoCalendario(modo) {
+  return el('div', { classe: 'fileira visoes', role: 'group', 'aria-label': 'Ver o calendário por' }, [['semana', 'Semana'], ['mes', 'Mês']].map(([m, nome]) => el('button', {
+    type: 'button', classe: 'pilula', 'aria-pressed': String(m === modo), onclick: () => { if (m !== modo) trocarCalendario(m); },
+  }, nome)));
 }
 
 // ---------- SEMANA: o varal ----------
@@ -342,8 +357,9 @@ export function desenharSemana(entrando = false) {
   const doDia = tarefasDoDia(estado.tarefas, diaEscolhido).filter(visiveis).sort(ordenar);
   const nomeDia = diaEscolhido === estado.hoje ? 'Hoje' : diaPorExtenso(diaEscolhido);
   tela.replaceChildren(
-    el('h1', { id: 'titulo-semana' }, 'Esta semana'),
-    el('p', { classe: 'data' }, intervalo),
+    el('h1', { id: 'titulo-semana' }, 'Calendário'),
+    trocaDoCalendario('semana'),
+    el('p', { classe: 'data' }, `Esta semana · ${intervalo}`),
     varal,
     el('section', { classe: 'grupo cartao' },
       el('h2', {}, nomeDia[0].toUpperCase() + nomeDia.slice(1), el('span', { classe: 'n' }, String(doDia.length))),
