@@ -172,6 +172,8 @@ section.grupo { margin-top: 22px; }
 .campo textarea, .campo input[type="text"], .campo input[type="url"], .campo input[type="date"] {
   min-height: 54px; border-radius: 14px; border: 2px solid var(--borda-campo); background: var(--cartao); padding: 12px 14px; resize: vertical; width: 100%; }
 .campo textarea:focus, .campo input:focus { outline: none; border-color: var(--luz); }
+.outro-tempo { display: inline-flex; align-items: center; gap: 6px; color: var(--suave); }
+.outro-tempo input { width: 6.5rem; min-height: 44px; border-radius: 999px; border: 2px solid var(--borda-campo); background: var(--cartao); padding: 0 14px; }
 .so-voce { display: inline-flex; align-items: center; gap: 4px; }
 .so-voce svg { width: 16px; height: 16px; }
 .bloco { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
@@ -460,6 +462,8 @@ body.mergulhando { overflow: hidden; }
 /* Importante, Urgente e a Matriz (28/10) */
 .marca-t.importante { box-shadow: inset 0 0 0 1.5px var(--acao); color: var(--tinta); font-weight: 700; }
 .marca-t.urgente { box-shadow: inset 0 0 0 1.5px var(--luz-sombra); color: var(--luz-sombra); font-weight: 700; }
+.marca-t.projeto { color: var(--tinta); }
+.projetos-grupos .rotulo { margin-top: 14px; }
 :root[data-tema="noite"] .marca-t.urgente { box-shadow: inset 0 0 0 1.5px var(--luz); color: var(--luz); }
 .matriz { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
 @media (min-width: 1000px) { .matriz { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

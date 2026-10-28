@@ -1,7 +1,7 @@
 // Centelha · a tarefa aberta, o "Travei" e o momento "Acesa!".
 // Aqui cada campo salva sozinho ao sair dele (ou depois de um respiro sem digitar), sem redesenhar a tela.
 import { rotuloDia, somarDias } from './datas.js';
-import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES } from './calculos.js';
+import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES, duracaoTexto } from './calculos.js';
 import { estado, mudar, falha, criarProximaVez, cancelarProxima } from './estado.js';
 import { dobra } from './telas.js';
 import { escolherMergulho } from './mergulho.js';
@@ -111,6 +111,9 @@ function desenharTarefa() {
     el('section', { classe: 'cartao bloco', id: 'tarefa-conversa' }, ...conteudoConversa()),
     dobra('tarefa-mais', 'Mais detalhes', null, [
       linhaGrupo(),
+      dados.tem0007 ? linhaProjeto() : null,
+      dados.tem0007 ? linhaTempo() : null,
+      dados.tem0007 ? linhaEnergia() : null,
       linhaParte(),
       linhaRepetir(),
       linhaPrioridade(),
@@ -299,6 +302,66 @@ function linhaGrupo() {
     campo('subgrupo', 'Subgrupo', 'subgrupos', 'ex.: CONSERTOS'),
     el('datalist', { id: 'areas' }, areas.map((a) => el('option', { value: a }))),
     listaSub);
+}
+
+// ---------- Projeto, tempo e energia (migração 0007; escolhas de Rafael de 28/10) ----------
+// Projeto: escreva o nome; se ainda não existe, nasce na hora. Apagar o nome tira a tarefa do projeto.
+function linhaProjeto() {
+  const alvo = t;
+  const nomeDe = (id) => estado.projetos.find((p) => p.id === id)?.nome || '';
+  const entrada = el('input', { id: 'campo-projeto', type: 'text', list: 'projetos-lista', autocomplete: 'off', placeholder: 'ex.: Site novo' });
+  entrada.value = nomeDe(alvo.projeto_id);
+  entrada.addEventListener('change', async () => {
+    const nome = entrada.value.replace(/\s+/g, ' ').trim();
+    if (nome === nomeDe(alvo.projeto_id)) return;
+    if (!nome) { await gravarEm(alvo, { projeto_id: null }); return; }
+    let projeto = estado.projetos.find((p) => p.nome.toLocaleLowerCase('pt-BR') === nome.toLocaleLowerCase('pt-BR'));
+    if (!projeto) {
+      mostrarEstado('Salvando…');
+      try {
+        projeto = await dados.criarProjeto(estado.espacoId, nome);
+        estado.projetos.push(projeto);
+      } catch (erro) { entrada.value = nomeDe(alvo.projeto_id); falha(erro); return; }
+    }
+    await gravarEm(alvo, { projeto_id: projeto.id });
+    if (t === alvo) entrada.value = nomeDe(alvo.projeto_id);
+  });
+  return el('div', { classe: 'campo' },
+    el('label', { for: 'campo-projeto' }, el('span', {}, 'Projeto'), el('span', {}, 'um nome novo cria o projeto')),
+    entrada,
+    el('datalist', { id: 'projetos-lista' }, estado.projetos.filter((p) => !p.arquivado).map((p) => el('option', { value: p.nome }))));
+}
+
+const TEMPOS = [[15, '15 min'], [30, '30 min'], [60, '1 h'], [120, '2 h']];
+function linhaTempo() {
+  const alvo = t, atual = alvo.minutos || null;
+  const trocar = async (v) => {
+    if (v === atual) return;
+    await gravarEm(alvo, { minutos: v });
+    if (t === alvo) $('tarefa-tempo')?.replaceWith(linhaTempo());
+  };
+  const outro = el('input', { id: 'campo-minutos', type: 'number', min: '1', max: '1440', inputmode: 'numeric', placeholder: 'outro', 'aria-label': 'Outro tempo, em minutos' });
+  if (atual && !TEMPOS.some(([n]) => n === atual)) outro.value = String(atual);
+  outro.addEventListener('change', () => {
+    const n = Math.round(Number(outro.value));
+    trocar(n >= 1 && n <= 1440 ? n : null);
+  });
+  return el('div', { classe: 'campo', id: 'tarefa-tempo' },
+    el('span', { classe: 'rot' }, el('span', {}, 'Quanto tempo deve levar'), el('span', {}, atual ? duracaoTexto(atual * 60000) : 'sem tempo')),
+    el('div', { classe: 'fileira' },
+      ...TEMPOS.map(([n, nome]) => pilula(nome, n === atual, () => trocar(n === atual ? null : n))),
+      el('label', { classe: 'outro-tempo' }, outro, el('span', {}, 'min'))));
+}
+
+const ENERGIAS = [['baixa', 'Baixa'], ['media', 'Média'], ['alta', 'Alta']];
+function linhaEnergia() {
+  const alvo = t;
+  return el('div', { classe: 'campo', id: 'tarefa-energia' },
+    el('span', { classe: 'rot' }, el('span', {}, 'Energia que ela pede')),
+    el('div', { classe: 'fileira' }, ENERGIAS.map(([v, nome]) => pilula(nome, alvo.energia === v, async () => {
+      await gravarEm(alvo, { energia: alvo.energia === v ? null : v });
+      if (t === alvo) $('tarefa-energia')?.replaceWith(linhaEnergia());
+    }))));
 }
 
 function linhaParte() {

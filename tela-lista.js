@@ -12,8 +12,9 @@ import { quadro, tabela, linhaDoTempo, calendario } from './visoes.js';
 
 const abertas = new Set();
 
+// No tipo "projeto" (0007), o lugar de "area" guarda o id do projeto.
 export function abrirLista(tipo, area = null, subgrupo = null) {
-  const pertence = (t) => (tipo === 'todas' || tipo === 'calendario' ? true : tipo === 'matriz' ? naMatriz(t, estado.hoje) : tipo === 'prioridades'
+  const pertence = (t) => (tipo === 'todas' || tipo === 'calendario' ? true : tipo === 'matriz' ? naMatriz(t, estado.hoje) : tipo === 'projeto' ? t.projeto_id === area : tipo === 'prioridades'
     ? !!t.prioridade_semana
     : lugar(t).area === area && (tipo === 'area' || lugar(t).subgrupo === subgrupo));
   const daLista = estado.tarefas.filter((t) => t.estado !== 'cancelada' && pertence(t));
@@ -43,18 +44,18 @@ export function desenharLista() {
   const todas = estado.tarefas.filter((t) => L.ids.has(t.id) && t.estado !== 'cancelada');
   const ativas = todas.filter((t) => !L.concluidas.has(t.id)).sort(ordem);
   const concluidas = todas.filter((t) => L.concluidas.has(t.id)).sort(ordem);
-  const opcoes = { estrela: true, semGrupo: L.tipo !== 'prioridades' };
+  const opcoes = { estrela: true, semGrupo: L.tipo !== 'prioridades' && L.tipo !== 'projeto', semProjeto: L.tipo === 'projeto' };
   if (L.tipo === 'matriz') return desenharMatriz(tela, ativas, opcoes);
   const visao = visaoDe(L);
   if (visao !== 'lista') return desenharVisao(L, tela, visao, todas, ativas, opcoes);
   if (L.tipo === 'todas') return desenharTodas(L, tela, ativas, concluidas, opcoes);
 
-  const titulo = L.tipo === 'prioridades' ? 'Prioridades da semana' : L.tipo === 'area' ? L.area : (L.subgrupo ?? 'Sem subgrupo');
-  const acima = L.tipo === 'sub' ? L.area : L.tipo === 'area' ? 'Grupo inteiro' : 'Tarefas com estrela';
+  const titulo = tituloDe(L), acima = acimaDe(L);
 
   const corpo = [];
   if (!ativas.length) {
-    corpo.push(el('p', { classe: 'vazio' }, L.tipo === 'prioridades' ? 'Nenhuma tarefa com estrela. Toque na estrela de uma tarefa para ela vir para cá.' : 'Nenhuma tarefa aberta nesta lista. Anote abaixo.'));
+    corpo.push(el('p', { classe: 'vazio' }, L.tipo === 'prioridades' ? 'Nenhuma tarefa com estrela. Toque na estrela de uma tarefa para ela vir para cá.'
+      : L.tipo === 'projeto' ? 'Nenhuma tarefa aberta neste projeto. Anote abaixo, ou escolha o projeto em "Mais detalhes" da tarefa.' : 'Nenhuma tarefa aberta nesta lista. Anote abaixo.'));
   } else if (L.tipo === 'area') {
     for (const s of agruparPorArea(ativas, lugar)[0]?.subgrupos || []) {
       corpo.push(el('p', { classe: 'rotulo', style: 'text-transform:none' }, `${s.nome ?? 'Sem subgrupo'} · ${s.total}`),
@@ -118,8 +119,12 @@ function trocaDeVisao(L) {
     onclick: () => { try { localStorage.setItem(chaveVisao(L), v); } catch { /* sem guardar: vale só agora */ } desenharLista(); },
   }, nome)));
 }
-const tituloDe = (L) => (L.tipo === 'calendario' ? 'Calendário' : L.tipo === 'todas' ? 'Todas' : L.tipo === 'prioridades' ? 'Prioridades da semana' : L.tipo === 'area' ? L.area : (L.subgrupo ?? 'Sem subgrupo'));
-const acimaDe = (L) => (L.tipo === 'calendario' ? 'As tarefas de cada dia' : L.tipo === 'todas' ? 'Todas as tarefas abertas, por grupo' : L.tipo === 'sub' ? L.area : L.tipo === 'area' ? 'Grupo inteiro' : 'Tarefas com estrela');
+const nomeDoProjeto = (id) => estado.projetos.find((p) => p.id === id)?.nome ?? 'Projeto';
+const tituloDe = (L) => (L.tipo === 'calendario' ? 'Calendário' : L.tipo === 'todas' ? 'Todas' : L.tipo === 'matriz' ? 'Matriz' : L.tipo === 'prioridades' ? 'Prioridades da semana'
+  : L.tipo === 'projeto' ? nomeDoProjeto(L.area) : L.tipo === 'area' ? L.area : (L.subgrupo ?? 'Sem subgrupo'));
+export const tituloDaLista = (L) => (L ? tituloDe(L) : 'Lista');
+const acimaDe = (L) => (L.tipo === 'calendario' ? 'As tarefas de cada dia' : L.tipo === 'todas' ? 'Todas as tarefas abertas, por grupo' : L.tipo === 'projeto' ? 'Projeto'
+  : L.tipo === 'sub' ? L.area : L.tipo === 'area' ? 'Grupo inteiro' : 'Tarefas com estrela');
 function desenharVisao(L, tela, visao, todas, ativas, opcoes) {
   const corpo = visao === 'quadro' ? quadro(todas, opcoes, ordem)
     : visao === 'tabela' ? tabela(todas, desenharLista)
@@ -160,7 +165,8 @@ function adicionar(L) {
     e.preventDefault();
     const texto = campo.value.trim();
     if (!texto) return;
-    const extra = L.tipo === 'todas' ? {} : L.tipo === 'prioridades' ? { prioridade_semana: true } : L.tipo === 'area' ? { area: L.area } : { area: L.area, subgrupo: L.subgrupo };
+    const extra = L.tipo === 'todas' ? {} : L.tipo === 'prioridades' ? { prioridade_semana: true } : L.tipo === 'projeto' ? { projeto_id: L.area }
+      : L.tipo === 'area' ? { area: L.area } : { area: L.area, subgrupo: L.subgrupo };
     const nova = await anotar(texto, false, extra, (t) => L.ids.add(t.id));
     if (nova) setTimeout(() => $('adicionar-tarefa')?.focus(), 30);
   });

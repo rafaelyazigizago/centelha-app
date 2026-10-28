@@ -6,6 +6,16 @@ const CHAVE_PUBLICA = 'sb_publishable_B8VUf-oWJwakz9uBSXEeIA_TeSn9y0m';
 export const CAMPOS = 'id,titulo,notas,estado,dia,inicio,parte_do_dia,hora,area,subgrupo,ordem,etiquetas,lentes,prioridade_semana,vezes_adiada,' +
   'repetir_dias,porque,parei_aqui,proximo_passo,pronto_quando,resultado_meta,resultado_efeito,prova_url,privada,feita_em,criado_em';
 
+// Desde a migração 0007 (projetos, tempo e energia): o app pergunta ao banco se ela já rodou. Antes do Run de Rafael,
+// os campos novos ficam de fora e nada quebra; depois, aparecem sozinhos na próxima vez que o app carregar.
+const CAMPOS_0007 = ',projeto_id,minutos,energia';
+export let tem0007 = false;
+const campos = () => CAMPOS + (tem0007 ? CAMPOS_0007 : '');
+export async function conferir0007() {
+  try { tem0007 = !(await banco.from('projetos').select('id').limit(1)).error; } catch { tem0007 = false; }
+  return tem0007;
+}
+
 export let banco;
 
 export function iniciar() {
@@ -25,9 +35,9 @@ export async function espacoPessoal(usuarioId) {
 
 // Abertas (todas) + feitas desde um instante (para as luzes do dia e da semana).
 export async function carregarTarefas(espacoId, feitasDesde) {
-  const abertas = exigir(await banco.from('tarefas').select(CAMPOS).eq('espaco_id', espacoId).eq('estado', 'aberta')
+  const abertas = exigir(await banco.from('tarefas').select(campos()).eq('espaco_id', espacoId).eq('estado', 'aberta')
     .order('dia', { ascending: true, nullsFirst: false }).order('criado_em', { ascending: true }));
-  const feitas = exigir(await banco.from('tarefas').select(CAMPOS).eq('espaco_id', espacoId).eq('estado', 'feita')
+  const feitas = exigir(await banco.from('tarefas').select(campos()).eq('espaco_id', espacoId).eq('estado', 'feita')
     .gte('feita_em', feitasDesde).order('feita_em', { ascending: true }));
   return [...abertas, ...feitas];
 }
@@ -50,7 +60,17 @@ export async function mudarTarefa(id, patch) {
 }
 
 export async function criarTarefa(dados) {
-  return exigir(await banco.from('tarefas').insert(dados).select(CAMPOS).single());
+  return exigir(await banco.from('tarefas').insert(dados).select(campos()).single());
+}
+
+// ---------- Projetos (0007): a tarefa pode servir a um projeto. Arquiva-se, não se apaga ----------
+const CAMPOS_PROJETO = 'id,nome,emoji,cor,arquivado';
+export async function projetos(espacoId) {
+  if (!tem0007) return [];
+  return exigir(await banco.from('projetos').select(CAMPOS_PROJETO).eq('espaco_id', espacoId).order('nome', { ascending: true }));
+}
+export async function criarProjeto(espacoId, nome) {
+  return exigir(await banco.from('projetos').insert({ espaco_id: espacoId, nome }).select(CAMPOS_PROJETO).single());
 }
 
 export async function passosDe(tarefaId) {
@@ -168,9 +188,13 @@ export async function exportarTudo(espacoId, usuarioId) {
   const diario = exigir(await banco.from('diario').select('*').eq('usuario_id', usuarioId).order('dia', { ascending: true }));
   // Áudios e vídeos: vem a lista; os arquivos ficam no balde "diario" do Supabase.
   const diario_midias = exigir(await banco.from('diario_midias').select('*').eq('usuario_id', usuarioId).order('criado_em', { ascending: true }));
+  // Desde a 0007: os projetos, as etiquetas cadastradas e o visual das listas
+  const doEspaco = async (tabela) => (tem0007 ? exigir(await banco.from(tabela).select('*').eq('espaco_id', espacoId)) : []);
+  const [projetos, etiquetas, listas] = [await doEspaco('projetos'), await doEspaco('etiquetas'), await doEspaco('listas')];
   return {
     sistema: 'Centelha', exportado_em: new Date().toISOString(),
-    contagem: { tarefas: tarefas.length, subtarefas: subtarefas.length, comentarios: comentarios.length, anexos: anexos.length, travadas: travadas.length, diario: diario.length, diario_midias: diario_midias.length },
-    tarefas, subtarefas, comentarios, anexos, travadas, diario, diario_midias,
+    contagem: { tarefas: tarefas.length, subtarefas: subtarefas.length, comentarios: comentarios.length, anexos: anexos.length, travadas: travadas.length, diario: diario.length, diario_midias: diario_midias.length,
+      projetos: projetos.length, etiquetas: etiquetas.length, listas: listas.length },
+    tarefas, subtarefas, comentarios, anexos, travadas, diario, diario_midias, projetos, etiquetas, listas,
   };
 }

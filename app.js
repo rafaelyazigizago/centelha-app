@@ -8,7 +8,7 @@ import { desenharHoje, desenharSemana, desenharCaixa, aoAbrirTarefa } from './te
 import { abrirTarefa, fecharTarefa, atualizarTarefa, aoVoltar, textoParaOuvir, fecharMomento, momentoAberto, tarefaAberta } from './tela-tarefa.js';
 import { desenharDiario, salvarAgora, esquecerDiario, pararDeOuvir } from './tela-diario.js';
 import { desenharGrupos, aoAbrirLista } from './tela-grupos.js';
-import { abrirLista as prepararLista, desenharLista } from './tela-lista.js';
+import { abrirLista as prepararLista, desenharLista, tituloDaLista } from './tela-lista.js';
 import { desenharMenu, ligarMenu } from './menu.js';
 import { aoAbrirTarefaPelasAcoes, abrirMover, alternarEstrela, limparSelecao, selecao } from './acoes.js';
 import { alternarFeita, moverPara } from './estado.js';
@@ -95,7 +95,7 @@ function abrirLista(tipo, area = null, subgrupo = null) {
   fecharPainel();
   limparSelecao();
   prepararLista(tipo, area, subgrupo);
-  NOMES.lista = tipo === 'prioridades' ? 'Prioridades' : (tipo === 'area' ? area : (subgrupo ?? 'Sem subgrupo'));
+  NOMES.lista = tipo === 'prioridades' ? 'Prioridades' : tituloDaLista(estado.lista);   // o voltar da tarefa diz de onde ela veio
   irPara('lista');
 }
 ligarMenu((aba) => irPara(aba), abrirLista);
@@ -192,7 +192,7 @@ async function entrar(usuario) {
   mostrarEstado('Carregando…');
   if (!estado.carregadoEm) mostrarCarregando();
   try {
-    estado.espacoId = await comTempo(dados.espacoPessoal(usuario.id));
+    [estado.espacoId] = await comTempo(Promise.all([dados.espacoPessoal(usuario.id), dados.conferir0007()]));   // a 0007 já rodou?
   } catch (erro) {
     console.error(erro);
     mostrarSemBanco();
@@ -205,7 +205,7 @@ async function entrar(usuario) {
 async function carregar() {
   const desde = deISO(segundaDaSemana(hojeISO())).toISOString();
   try {
-    [estado.tarefas, estado.passos] = await comTempo(Promise.all([dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos()]));
+    [estado.tarefas, estado.passos, estado.projetos] = await comTempo(Promise.all([dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos(), dados.projetos(estado.espacoId)]));
   } catch (erro) {
     console.error(erro);
     if (!estado.carregadoEm) { mostrarSemBanco(); return false; }   // na 1ª carga, a tela que explica; depois, o que já está na tela fica

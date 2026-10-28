@@ -8,6 +8,7 @@ export const estado = {
   usuario: null,
   espacoId: null,
   tarefas: [],
+  projetos: [],        // desde a 0007: os projetos do espaço (vazio antes do Run)
   hoje: hojeISO(),
   secoes: new Map(),   // id → seção fixada ao carregar (nada muda de lugar sozinho)
   marcas: new Map(),   // id → aviso local, como "→ Amanhã" (não vai para o banco)

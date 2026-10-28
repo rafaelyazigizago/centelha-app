@@ -1,6 +1,6 @@
 // Centelha · telas Hoje, Semana e Caixa de entrada.
 import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
-import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo, temMarca, REPETICOES } from './calculos.js';
+import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo, temMarca, REPETICOES, duracaoTexto } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
@@ -15,7 +15,7 @@ const visiveis = (t) => t.estado !== 'cancelada';
 
 // ---------- Uma tarefa: a lâmpada, o título, o porquê, a linha de detalhes e os botões ----------
 // Como no Microsoft To Do: estrela à direita (opcional), ⋯ ou clique direito abre as ações, Shift+clique escolhe várias.
-export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
+export function linhaTarefa(t, { umToque, semGrupo, estrela, semProjeto } = {}) {
   const feita = t.estado === 'feita';
   const marca = estado.marcas.get(t.id);
   const escolhida = selecao.has(t.id);
@@ -26,6 +26,9 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
   if (t.dia && !['hoje', 'prioridade', 'amanha'].includes(secao(t)) && !marca) marcas.push(el('span', { classe: 'marca-t' }, rotuloDia(t.dia)));
   const passos = estado.passos.get(t.id);
   if (passos?.total) marcas.push(el('span', { classe: 'marca-t' }, `${passos.feitos} de ${passos.total} passos`));
+  if (t.minutos) marcas.push(el('span', { classe: 'marca-t' }, `~${duracaoTexto(t.minutos * 60000)}`));
+  const projeto = !semProjeto && t.projeto_id && estado.projetos.find((p) => p.id === t.projeto_id);
+  if (projeto) marcas.push(el('span', { classe: 'marca-t projeto' }, `◆ ${projeto.nome}`));
   for (const [chave, nome] of LENTES) if ((t.lentes || []).includes(chave)) marcas.push(el('span', { classe: 'marca-t', html: `${icone(chave)} ${nome}` }));
   if (t.repetir_dias > 0) marcas.push(el('span', { classe: 'marca-t' }, `↻ ${REPETICOES.find(([n]) => n === t.repetir_dias)?.[1] ?? `a cada ${t.repetir_dias} dias`}`));
   if (temMarca(t, 'importante')) marcas.push(el('span', { classe: 'marca-t importante' }, 'Importante'));
