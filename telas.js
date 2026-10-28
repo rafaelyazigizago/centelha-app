@@ -9,7 +9,7 @@ import { corDe } from './etiquetas.js';
 import { usavel } from './funcoes.js';
 import { matrizQuadros } from './tela-lista.js';
 
-const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];   // "Traz renda": nome novo da lente Dinheiro (28/10)
+const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Libera tempo'], ['amor', 'Quem eu amo']];   // "Traz renda" e "Libera tempo": nomes novos (28/10; o 2º para não confundir com "Quanto tempo deve levar")
 const dobrasAbertas = new Set();
 let abrirTarefa = () => {};
 export const aoAbrirTarefa = (f) => { abrirTarefa = f; };

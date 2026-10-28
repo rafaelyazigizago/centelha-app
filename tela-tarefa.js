@@ -10,7 +10,7 @@ import { cadastroDe, corDe, sugestoes, garantirCadastro, abrirCadastroEtiquetas 
 import * as dados from './dados.js';
 import { $, el, icone, lampada, abrirFolha, fecharFolha, mostrarEstado, avisar, contar, movimento, reiniciar, fagulhas, vibrar } from './ui.js';
 
-const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];   // "Traz renda": nome novo da lente Dinheiro (28/10)
+const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Libera tempo'], ['amor', 'Quem eu amo']];   // "Traz renda" e "Libera tempo": nomes novos (28/10; o 2º para não confundir com "Quanto tempo deve levar")
 const PARTES = [['manha', 'manhã'], ['almoco', 'almoço'], ['tarde', 'tarde'], ['noite', 'noite']];
 const MOTIVOS = [['falta_informacao', 'Falta informação'], ['depende_de_alguem', 'Depende de alguém'], ['grande_demais', 'Grande demais'],
   ['chata', 'Chata'], ['medo_de_errar', 'Medo de errar']];
@@ -99,35 +99,52 @@ export function textoParaOuvir() {
 }
 
 // ---------- A tela ----------
+// Em 3 blocos fixos (lote 43, revisão do agrupamento aprovada por Rafael): Fazer · Por que importa · Mais detalhes.
+// Prioridade, importância e urgência ficam lado a lado ("Prioridade é diferente de importante. Prioridade, importância, urgência").
+const tituloDoBloco = (texto, id) => el('h2', { classe: 'bloco-titulo', id }, texto);
 function desenharTarefa() {
   $('tela-tarefa').replaceChildren(...[   // o que não existe (null) fica de fora, senão aparece escrito "null"
     el('button', { type: 'button', classe: 'voltar', onclick: () => voltar() }, noPainel ? '✕ Fechar' : `‹ ${nomeVolta}`),
     tituloEditavel(),
+    // Fazer: quando, onde parei, o próximo passo, os passos e o foco
+    tituloDoBloco('Fazer', 'bloco-fazer'),
     linhaQuando(),
-    linhaLentes(),
-    usavel('matriz') ? linhaMarcas() : null,
-    t.estado === 'aberta' && usavel('chama') ? el('button', { type: 'button', classe: 'btn claro focar', id: 'focar', html: `${icone('chama')}<span>Focar nesta tarefa</span>`, onclick: () => escolherChama(t) }) : null,
-    el('section', { classe: 'cartao importa bloco' }, campoTexto('porque', 'Por que importa', { dica: 'ex.: evita multa de R$ 480, libera 2 horas na sexta' })),
     el('section', { classe: 'cartao bloco' },
       campoTexto('parei_aqui', 'Parei aqui', { dica: 'onde você parou' }),
       campoTexto('proximo_passo', 'Próximo passo', { dica: 'o que fazer primeiro quando voltar' })),
     cartaoPassos(),
+    t.estado === 'aberta' && usavel('chama') ? el('button', { type: 'button', classe: 'btn claro focar', id: 'focar', html: `${icone('chama')}<span>Focar nesta tarefa</span>`, onclick: () => escolherChama(t) }) : null,
+    // Por que importa: o porquê, a meta, as lentes e o peso
+    tituloDoBloco('Por que importa', 'bloco-importa'),
+    el('section', { classe: 'cartao importa bloco' }, campoTexto('porque', 'Por que importa', { dica: 'ex.: evita multa de R$ 480, libera 2 horas na sexta' })),
     cartaoMeta(),
+    linhaLentes(),
+    linhaPeso(),
     el('section', { classe: 'cartao bloco', id: 'tarefa-conversa' }, ...conteudoConversa()),
+    // Mais detalhes, em 3 partes curtas
     dobra('tarefa-mais', 'Mais detalhes', null, [
+      el('p', { classe: 'rotulo' }, 'onde mora'),
       linhaGrupo(),
       usavel('projetos') ? linhaProjeto() : null,
       usavel('etiquetas') ? linhaEtiquetas() : null,
-      usavel('tempo') ? linhaTempo() : null,
-      usavel('tempo') ? linhaEnergia() : null,
+      el('p', { classe: 'rotulo' }, 'ritmo'),
       linhaParte(),
       usavel('repetir') ? linhaRepetir() : null,
-      linhaPrioridade(),
+      usavel('tempo') ? linhaTempo() : null,
+      usavel('tempo') ? linhaEnergia() : null,
+      el('p', { classe: 'rotulo' }, 'como saber que acabou'),
       campoTexto('pronto_quando', 'Pronto quando', { dica: 'como você vai saber que acabou' }),
       campoTexto('notas', 'Notas', { linhas: 4 }),
     ]),
     acoes(),
   ].filter(Boolean));
+}
+
+// Prioridade da semana (a estrela), Importante e Urgente, lado a lado. Importante e Urgente vêm com a Matriz ligada.
+function linhaPeso() {
+  return el('div', { classe: 'campo peso', id: 'tarefa-peso' },
+    el('span', { classe: 'rot' }, el('span', {}, usavel('matriz') ? 'Prioridade, importância e urgência' : 'Prioridade')),
+    el('div', { classe: 'fileira' }, linhaPrioridade(), usavel('matriz') ? linhaMarcas() : null));
 }
 
 function tituloEditavel() {

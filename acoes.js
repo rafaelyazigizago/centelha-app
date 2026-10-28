@@ -70,23 +70,36 @@ export function abrirAcoes(t) {
     type: 'button', classe: 'opcao inteira', 'data-mantem-aviso': true, ...extra,
     onclick: () => { fecharFolha('folha-acoes'); fazer(); },
   }, rotulo);
+  // Em 4 grupos com título (lote 43): o olho acha pelo grupo em vez de ler 14 linhas (lei de Hick). Grupo vazio não aparece.
+  const grupo = (nome, itens) => { const ok = itens.flat().filter(Boolean); return ok.length ? [nome ? el('p', { classe: 'rotulo' }, nome) : null, el('div', { classe: 'opcoes' }, ok)] : []; };
   $('folha-acoes').replaceChildren(el('div', { classe: 'miolo' },
     el('div', { classe: 'alca' }),
     el('h2', { id: 'titulo-acoes', style: 'font-size:1.3rem' }, t.titulo),
-    el('div', { classe: 'opcoes' },
-      item(feita ? 'Reabrir (apagar a luz)' : 'Concluir (acender a luz)', () => alternarFeita(t)),
-      item(t.prioridade_semana ? 'Tirar a estrela' : 'Pôr estrela (prioridade da semana)', () => alternarEstrela(t)),
-      t.dia !== estado.hoje && !feita ? item('Trazer para hoje', () => moverPara(t, estado.hoje)) : null,
-      !feita ? item('Amanhã', () => moverPara(t, somarDias(estado.hoje, 1))) : null,
-      !feita && usavel('chama') ? item('Focar nesta tarefa (Chama)', () => depoisDeFechar(() => escolherChama(t))) : null,
-      !feita && usavel('matriz') ? item(temMarca(t, 'importante') ? 'Tirar "Importante"' : 'Importante', () => mudarMarca(t, 'importante')) : null,
-      !feita && usavel('matriz') ? item(temMarca(t, 'urgente') ? 'Tirar "Urgente"' : 'Urgente', () => mudarMarca(t, 'urgente')) : null,
-      ...situacoes(t, item),
-      ...subirDescer(t, item),
-      item('Mover para outro grupo…', () => depoisDeFechar(() => abrirMover([t]))),
-      item('Escolher várias', () => { selecao.add(t.id); comecarSelecao(); }),
-      item('Abrir a tarefa', () => abrirTarefa(t)),
-    )));
+    ...[
+      ...grupo('agora', [
+        item(feita ? 'Reabrir (apagar a luz)' : 'Concluir (acender a luz)', () => alternarFeita(t)),
+        !feita && usavel('chama') ? item('Focar nesta tarefa (Chama)', () => depoisDeFechar(() => escolherChama(t))) : null,
+        situacoes(t, item),
+      ]),
+      ...grupo('quando', [
+        t.dia !== estado.hoje && !feita ? item('Trazer para hoje', () => moverPara(t, estado.hoje)) : null,
+        !feita ? item('Amanhã', () => moverPara(t, somarDias(estado.hoje, 1))) : null,
+        t.dia && !feita ? item('Sem dia', () => moverPara(t, null)) : null,
+      ]),
+      ...grupo('peso', [
+        item(t.prioridade_semana ? 'Tirar a estrela' : 'Pôr estrela (prioridade da semana)', () => alternarEstrela(t)),
+        !feita && usavel('matriz') ? item(temMarca(t, 'importante') ? 'Tirar "Importante"' : 'Importante', () => mudarMarca(t, 'importante')) : null,
+        !feita && usavel('matriz') ? item(temMarca(t, 'urgente') ? 'Tirar "Urgente"' : 'Urgente', () => mudarMarca(t, 'urgente')) : null,
+      ]),
+      ...grupo('lugar', [
+        item('Mover para outro grupo…', () => depoisDeFechar(() => abrirMover([t]))),
+        subirDescer(t, item),
+      ]),
+      ...grupo(null, [
+        item('Escolher várias', () => { selecao.add(t.id); comecarSelecao(); }),
+        item('Abrir a tarefa', () => abrirTarefa(t)),
+      ]),
+    ].filter(Boolean)));
   abrirFolha('folha-acoes');
 }
 

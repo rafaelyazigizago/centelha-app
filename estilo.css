@@ -224,6 +224,9 @@ section.grupo { margin-top: 22px; }
 .chave { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; }
 .chave input { width: 52px; height: 30px; accent-color: var(--luz); }
 .chave.funcao { align-items: flex-start; padding: 6px 0; }
+/* A tarefa em 3 blocos (lote 43) */
+.bloco-titulo { margin: 26px 0 4px; font-size: 1.05rem; color: var(--suave); text-transform: lowercase; letter-spacing: .02em; }
+.campo.peso > .fileira > .fileira, .campo.peso > .fileira > .lentes { display: contents; }
 .chave.funcao > span { display: grid; gap: 2px; }
 .chave.funcao .ajuda { margin: 0; }
 .chave.funcao input { flex: none; margin-top: 2px; }
