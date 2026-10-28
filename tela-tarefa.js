@@ -1,13 +1,13 @@
 // Centelha · a tarefa aberta, o "Travei" e o momento "Acesa!".
 // Aqui cada campo salva sozinho ao sair dele (ou depois de um respiro sem digitar), sem redesenhar a tela.
 import { rotuloDia, somarDias } from './datas.js';
-import { lampadasDoDia, feitasNaSemana } from './calculos.js';
+import { lampadasDoDia, feitasNaSemana, temMarca, comMarca } from './calculos.js';
 import { estado, mudar, falha } from './estado.js';
 import { dobra } from './telas.js';
 import * as dados from './dados.js';
 import { $, el, icone, lampada, abrirFolha, fecharFolha, mostrarEstado, avisar, contar, movimento, reiniciar, fagulhas, vibrar } from './ui.js';
 
-const LENTES = [['dinheiro', 'Dinheiro'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];
+const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];   // "Traz renda": nome novo da lente Dinheiro (28/10)
 const PARTES = [['manha', 'manhã'], ['almoco', 'almoço'], ['tarde', 'tarde'], ['noite', 'noite']];
 const MOTIVOS = [['falta_informacao', 'Falta informação'], ['depende_de_alguem', 'Depende de alguém'], ['grande_demais', 'Grande demais'],
   ['chata', 'Chata'], ['medo_de_errar', 'Medo de errar']];
@@ -94,6 +94,7 @@ function desenharTarefa() {
     tituloEditavel(),
     linhaQuando(),
     linhaLentes(),
+    linhaMarcas(),
     el('section', { classe: 'cartao importa bloco' }, campoTexto('porque', 'Por que importa', { dica: 'ex.: evita multa de R$ 480, libera 2 horas na sexta' })),
     el('section', { classe: 'cartao bloco' },
       campoTexto('parei_aqui', 'Parei aqui', { dica: 'onde você parou' }),
@@ -190,6 +191,21 @@ function linhaLentes() {
         if (!(await gravarEm(alvo, { lentes })) && t === alvo) $('tarefa-lentes')?.replaceWith(linhaLentes());
       },
     })));
+}
+
+// Importante e Urgente (28/10): duas marcas, separadas da estrela da semana. Juntas, montam a Matriz.
+function linhaMarcas() {
+  const alvo = t;
+  return el('div', { classe: 'lentes', id: 'tarefa-marcas', role: 'group', 'aria-label': 'Importância e urgência desta tarefa' },
+    [['importante', 'Importante'], ['urgente', 'Urgente']].map(([marca, nome]) => el('button', {
+      type: 'button', classe: 'pilula', 'aria-pressed': String(temMarca(alvo, marca)),
+      onclick: async (e) => {
+        const tem = temMarca(alvo, marca);
+        e.currentTarget.setAttribute('aria-pressed', String(!tem));
+        if (!tem) reiniciar(e.currentTarget, 'pop');
+        if (!(await gravarEm(alvo, { etiquetas: comMarca(alvo.etiquetas, marca, !tem) })) && t === alvo) $('tarefa-marcas')?.replaceWith(linhaMarcas());
+      },
+    }, nome)));
 }
 
 // Área (o grupo) e subgrupo, com as opções que já existem; dá para escrever um novo.

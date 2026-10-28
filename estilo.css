@@ -364,6 +364,46 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 /* Arrastar (Fase B, só no notebook): a linha da luz mostra onde a tarefa vai cair; o menu lateral mostra onde dá para soltar */
 .tarefa[draggable="true"] { cursor: grab; }
 .tarefa.arrastando { opacity: .45; cursor: grabbing; }
+/* Ver por tipos (28/10): Quadro, Tabela e Linha do tempo. Largos demais rolam para o lado dentro da caixa, nunca a página */
+.visoes { margin-top: 6px; }
+.quadro-kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 14px; overflow-x: auto; padding-bottom: 8px; }
+.coluna { border: 1.5px solid var(--linha); border-radius: 18px; padding: 10px; min-width: 0; }
+.coluna h2 { margin: 0 0 10px; font-size: 1.05rem; }
+.coluna .lista:empty { min-height: 56px; border: 2px dashed var(--linha); border-radius: 14px; }
+.quadro-kanban .tarefa .estrela:not([aria-pressed="true"]) { display: none; }   /* no Quadro, o título precisa do espaço */
+/* No notebook, Quadro, Tabela e Linha do tempo usam a largura toda (a lista comum continua com a coluna de leitura) */
+@media (min-width: 1000px) {
+  body:has(#tela-lista:not([hidden]) :is(.quadro-kanban, .tabela-tarefas, .linha-do-tempo)) :is(main, .topo) { max-width: none; }
+}
+.tabela-rolagem { overflow-x: auto; max-width: 100%; }
+.tabela-tarefas { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.tabela-tarefas th, .tabela-tarefas td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--linha); vertical-align: middle; }
+.tabela-tarefas th .ordenar { background: none; border: 0; font: inherit; font-weight: 700; color: var(--tinta); cursor: pointer; padding: 0; white-space: nowrap; }
+.tabela-tarefas tr.feita .link-tarefa { text-decoration: line-through; color: var(--suave); }
+.link-tarefa { background: none; border: 0; font: inherit; color: var(--tinta); text-align: left; cursor: pointer; padding: 0; }
+.marcas-tabela { display: block; font-size: .8rem; color: var(--suave); }
+.botao-lamp.mini svg { width: 22px; height: 28px; }
+.linha-do-tempo { display: grid; grid-auto-rows: minmax(34px, auto); align-items: center; gap: 4px 0; min-width: max-content; }
+.lt-dia { text-align: center; font-size: .75rem; color: var(--suave); grid-row: 1; display: flex; flex-direction: column; }
+.lt-dia strong { color: var(--tinta); font-size: .85rem; }
+.lt-dia.hoje strong { color: var(--luz-sombra); }
+:root[data-tema="noite"] .lt-dia.hoje strong { color: var(--luz); }
+.lt-dia.domingo { opacity: .55; }
+.lt-nome { grid-column: 1; text-align: left; background: none; border: 0; font: inherit; color: var(--tinta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10px 0 0; cursor: pointer; }
+.lt-barra { height: 22px; border-radius: 99px; border: 0; background: var(--luz); color: var(--acao); font-size: .75rem; cursor: pointer; min-width: 22px; }
+.lt-barra.feita { background: var(--feito); opacity: .6; }
+.lt-barra.antes { background: color-mix(in srgb, var(--luz) 45%, var(--cartao)); }
+/* Importante, Urgente e a Matriz (28/10) */
+.marca-t.importante { box-shadow: inset 0 0 0 1.5px var(--acao); color: var(--tinta); font-weight: 700; }
+.marca-t.urgente { box-shadow: inset 0 0 0 1.5px var(--luz-sombra); color: var(--luz-sombra); font-weight: 700; }
+:root[data-tema="noite"] .marca-t.urgente { box-shadow: inset 0 0 0 1.5px var(--luz); color: var(--luz); }
+.matriz { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+@media (min-width: 1000px) { .matriz { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.quadro { border-radius: 18px; border: 1.5px solid var(--linha); padding: 12px; min-width: 0; }
+.quadro h2 { margin: 0; font-size: 1.15rem; }
+.quadro .ajuda { margin: 2px 0 10px; }
+.quadro .lista:empty { min-height: 56px; border: 2px dashed var(--linha); border-radius: 14px; }
+.quadro-fazer { border-color: color-mix(in srgb, var(--luz) 60%, var(--linha)); }
 /* Resumo no topo do Hoje (lote 36): três números e a barra do que foi feito na semana */
 .resumo { margin-top: 18px; padding: 14px 16px; }
 .resumo-linha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

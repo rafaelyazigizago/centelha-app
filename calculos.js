@@ -159,3 +159,58 @@ export function yNoFio(arcos, x) {
   const t = Math.abs(a) < 1e-9 ? -c / b : (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
   return (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t ** 2 * p2[1];
 }
+
+// ---------- Importância, urgência e a Matriz (28/10, Rafael: "Prioridade, importância, urgência" são três coisas) ----------
+// A prioridade é a estrela da semana. Importância e urgência são etiquetas, como no Quadro, e montam a Matriz.
+const MARCAS = { importante: /^importante$/i, urgente: /^urgente$/i };
+export const temMarca = (t, marca) => (t.etiquetas || []).some((e) => MARCAS[marca].test(e));
+export function comMarca(etiquetas, marca, ligar) {
+  const resto = (etiquetas || []).filter((e) => !MARCAS[marca].test(e));
+  return ligar ? [...resto, marca] : resto;
+}
+export const QUADRANTES = [
+  ['fazer', 'Importante e urgente', 'Fazer agora'],
+  ['agendar', 'Importante, sem pressa', 'Marcar um dia para fazer'],
+  ['ajuda', 'Urgente, não importante', 'Pedir ajuda ou fazer rápido'],
+  ['depois', 'Nem importante nem urgente', 'Deixar para depois'],
+];
+export function quadranteDe(t) {
+  const i = temMarca(t, 'importante'), u = temMarca(t, 'urgente');
+  return i && u ? 'fazer' : i ? 'agendar' : u ? 'ajuda' : 'depois';
+}
+export function mudancaParaQuadrante(t, quadrante) {
+  let etiquetas = comMarca(t.etiquetas, 'importante', quadrante === 'fazer' || quadrante === 'agendar');
+  etiquetas = comMarca(etiquetas, 'urgente', quadrante === 'fazer' || quadrante === 'ajuda');
+  return { etiquetas };
+}
+// Entram na Matriz as abertas com alguma marca e, sem marca, as de até o fim desta semana: para ir classificando.
+export function naMatriz(t, hoje) {
+  if (t.estado !== 'aberta') return false;
+  if (temMarca(t, 'importante') || temMarca(t, 'urgente')) return true;
+  return !!t.dia && t.dia <= somarDias(segundaDaSemana(hoje), 6);
+}
+
+// ---------- Ver por tipos (28/10, como no Vikunja): Quadro, Tabela e Linha do tempo ----------
+// Quadro: as colunas vêm do estado e da situação que já existem (A fazer, Em andamento, Aguardando, Feitas).
+export const COLUNAS_QUADRO = [['afazer', 'A fazer'], ['andamento', 'Em andamento'], ['aguardando', 'Aguardando'], ['feitas', 'Feitas']];
+export function colunaDe(t) {
+  if (t.estado === 'feita') return 'feitas';
+  return situacaoDe(t) ?? 'afazer';
+}
+// O que muda numa tarefa solta noutra coluna. "agora" vem de fora para a conta poder ser testada.
+export function mudancaParaColuna(t, coluna, agora) {
+  if (coluna === 'feitas') return { estado: 'feita', feita_em: agora };
+  const patch = { etiquetas: comSituacao(t.etiquetas, coluna === 'afazer' ? null : coluna) };
+  if (t.estado === 'feita') Object.assign(patch, { estado: 'aberta', feita_em: null, feita_por: null });
+  return patch;
+}
+
+// Linha do tempo: uma barra por tarefa com dia, do início (se houver) até o dia, numa janela de "dias" a partir de "primeiro".
+// O que começa antes da janela fica preso na borda, marcado como "antes"; o que é todo depois dela não entra (null).
+export function barraNaLinha(t, primeiro, dias) {
+  if (!t.dia) return null;
+  const indice = (iso) => Math.round((deISO(iso) - deISO(primeiro)) / 864e5);
+  const fim = indice(t.dia), comeco = t.inicio ? Math.min(indice(t.inicio), fim) : fim;
+  if (comeco >= dias) return null;
+  return { de: Math.max(0, comeco), ate: Math.max(0, Math.min(dias - 1, fim)), antes: comeco < 0 };
+}

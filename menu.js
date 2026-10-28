@@ -38,6 +38,8 @@ export function desenharMenu() {
     comNome(item('Semana', 'semana', 0, atual('semana'), () => ir('semana')), 'Semana'),
     solta(comNome(item('Caixa', 'caixa', contar((t) => !t.dia), atual('caixa'), () => ir('caixa')), 'Caixa de entrada'),
       (ts) => emLote(ts, { dia: null }, { marca: '→ Caixa de entrada', mensagem: `${quantas(ts)} → Caixa de entrada` })),
+    comNome(item('Todas', 'grupos', abertas.length, atual('lista', 'todas'), () => abrirLista('todas')), 'Todas'),   // a "Todas" do To Do (28/10)
+    comNome(item('Matriz', 'matriz', contar((t) => (t.etiquetas || []).some((e) => /^(importante|urgente)$/i.test(e))), atual('lista', 'matriz'), () => abrirLista('matriz')), 'Matriz'),
     comNome(item('Diário', 'diario', 0, atual('diario'), () => ir('diario')), 'Diário'),
   ];
 

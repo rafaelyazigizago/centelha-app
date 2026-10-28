@@ -2,8 +2,8 @@
 // menu ⋯ (ou clique direito), "Mover para…" outro grupo ou subgrupo, estrela e a escolha de várias.
 // Nada se mexe sozinho: a tarefa movida fica no lugar, com a marca "→ destino", até a tela recarregar.
 import { somarDias } from './datas.js';
-import { agruparPorArea, situacaoDe } from './calculos.js';
-import { estado, mudar, moverPara, alternarFeita, redesenhar, falha, mudarSituacao } from './estado.js';
+import { agruparPorArea, situacaoDe, temMarca } from './calculos.js';
+import { estado, mudar, moverPara, alternarFeita, redesenhar, falha, mudarSituacao, mudarMarca } from './estado.js';
 import * as dados from './dados.js';
 import { $, el, abrirFolha, fecharFolha, avisar, mostrarEstado, folhaAtual } from './ui.js';
 import { reordenar } from './arrastar.js';
@@ -76,6 +76,8 @@ export function abrirAcoes(t) {
       item(t.prioridade_semana ? 'Tirar a estrela' : 'Pôr estrela (prioridade da semana)', () => alternarEstrela(t)),
       t.dia !== estado.hoje && !feita ? item('Trazer para hoje', () => moverPara(t, estado.hoje)) : null,
       !feita ? item('Amanhã', () => moverPara(t, somarDias(estado.hoje, 1))) : null,
+      !feita ? item(temMarca(t, 'importante') ? 'Tirar "Importante"' : 'Importante', () => mudarMarca(t, 'importante')) : null,
+      !feita ? item(temMarca(t, 'urgente') ? 'Tirar "Urgente"' : 'Urgente', () => mudarMarca(t, 'urgente')) : null,
       ...situacoes(t, item),
       ...subirDescer(t, item),
       item('Mover para outro grupo…', () => depoisDeFechar(() => abrirMover([t]))),
@@ -97,7 +99,7 @@ function situacoes(t, item) {
 
 // "Subir/Descer na lista": o mesmo que arrastar, sem arrastar (WCAG 2.5.7). Na tela de lista e nas caixas do Hoje.
 function subirDescer(t, item) {
-  if (estado.aba !== 'lista' && estado.aba !== 'hoje') return [];
+  if (estado.aba !== 'lista' && estado.aba !== 'hoje') return [];   // (na Matriz, "Subir/Descer" vale dentro do quadro)
   const no = document.querySelector(`#tela-${estado.aba} .lista[data-reordena] > .tarefa[data-id="${CSS.escape(t.id)}"]`);
   if (!no) return [];
   const antes = no.previousElementSibling?.classList.contains('tarefa') ? no.previousElementSibling : null;

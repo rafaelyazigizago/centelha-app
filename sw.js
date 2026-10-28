@@ -5,7 +5,7 @@ importScripts('versao.js');
 const VERSAO = `centelha-${self.VERSAO_APP || 'dev'}`;
 const ARQUIVOS = [
   './', 'index.html', 'estilo.css', 'manifest.webmanifest', 'versao.js',
-  'app.js', 'datas.js', 'calculos.js', 'dados.js', 'estado.js', 'preferencias.js', 'ui.js', 'telas.js', 'tela-tarefa.js', 'tela-diario.js', 'tela-grupos.js', 'tela-lista.js', 'menu.js', 'acoes.js', 'pet.js', 'arrastar.js',
+  'app.js', 'datas.js', 'calculos.js', 'dados.js', 'estado.js', 'preferencias.js', 'ui.js', 'telas.js', 'tela-tarefa.js', 'tela-diario.js', 'tela-grupos.js', 'tela-lista.js', 'visoes.js', 'menu.js', 'acoes.js', 'pet.js', 'arrastar.js',
   'fontes/atkinson-hyperlegible-latin-400-normal.woff2', 'fontes/atkinson-hyperlegible-latin-700-normal.woff2',
   'fontes/bricolage-grotesque-latin-700-normal.woff2', 'fontes/bricolage-grotesque-latin-800-normal.woff2',
   'fontes/lexend-latin-400-normal.woff2', 'fontes/lexend-latin-600-normal.woff2',

@@ -1,6 +1,6 @@
 // Centelha · o estado do app e as ações que mudam tarefas: tudo muda na tela na hora, grava no banco e pode ser desfeito.
 import { hojeISO, rotuloDia, interpretar } from './datas.js';
-import { secaoDe, situacaoDe, comSituacao } from './calculos.js';
+import { secaoDe, situacaoDe, comSituacao, temMarca, comMarca } from './calculos.js';
 import * as dados from './dados.js';
 import { avisar, mostrarEstado, fagulhas, vibrar } from './ui.js';
 
@@ -85,6 +85,13 @@ export function mudarSituacao(t, situacao) {
   const antes = [...(t.etiquetas || [])];
   const mensagem = situacao ? `${t.titulo} → ${nomes[situacao]}` : `Saiu de ${nomes[situacaoDe(t)] || 'a situação'} · ${t.titulo}`;
   return mudar(t, { etiquetas: comSituacao(antes, situacao) }, { mensagem, desfazer: { etiquetas: antes } });
+}
+
+// Importante e Urgente (a Matriz): pôr ou tirar a marca, com Desfazer.
+export function mudarMarca(t, marca) {
+  const antes = [...(t.etiquetas || [])], tem = temMarca(t, marca);
+  const nome = marca === 'importante' ? 'Importante' : 'Urgente';
+  return mudar(t, { etiquetas: comMarca(antes, marca, !tem) }, { mensagem: `${tem ? `Sem "${nome}"` : nome} · ${t.titulo}`, desfazer: { etiquetas: antes } });
 }
 
 export function moverPara(t, dia) {

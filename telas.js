@@ -1,15 +1,16 @@
 // Centelha · telas Hoje, Semana e Caixa de entrada.
 import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
-import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo } from './calculos.js';
+import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA, resumoDoTopo, temMarca } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
 import { ligarArrastar } from './arrastar.js';
 
-const LENTES = [['dinheiro', 'Dinheiro'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];
+const LENTES = [['dinheiro', 'Traz renda'], ['tempo', 'Tempo'], ['amor', 'Quem eu amo']];   // "Traz renda": nome novo da lente Dinheiro (28/10)
 const dobrasAbertas = new Set();
 let abrirTarefa = () => {};
 export const aoAbrirTarefa = (f) => { abrirTarefa = f; };
+export const abrir = (t) => abrirTarefa(t);   // para as visões (visoes.js), que não usam o cartão
 const visiveis = (t) => t.estado !== 'cancelada';
 
 // ---------- Uma tarefa: a lâmpada, o título, o porquê, a linha de detalhes e os botões ----------
@@ -26,8 +27,10 @@ export function linhaTarefa(t, { umToque, semGrupo, estrela } = {}) {
   const passos = estado.passos.get(t.id);
   if (passos?.total) marcas.push(el('span', { classe: 'marca-t' }, `${passos.feitos} de ${passos.total} passos`));
   for (const [chave, nome] of LENTES) if ((t.lentes || []).includes(chave)) marcas.push(el('span', { classe: 'marca-t', html: `${icone(chave)} ${nome}` }));
+  if (temMarca(t, 'importante')) marcas.push(el('span', { classe: 'marca-t importante' }, 'Importante'));
+  if (temMarca(t, 'urgente')) marcas.push(el('span', { classe: 'marca-t urgente' }, 'Urgente'));
   if ((t.etiquetas || []).some((e) => /^ideias?$/i.test(e))) marcas.push(el('span', { classe: 'marca-t ideia' }, 'ideia'));
-  for (const e of (t.etiquetas || []).filter((e) => !/^ideias?$/i.test(e) && e !== t.subgrupo).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t' }, '#' + e));
+  for (const e of (t.etiquetas || []).filter((e) => !/^(ideias?|importante|urgente)$/i.test(e) && e !== t.subgrupo).slice(0, 2)) marcas.push(el('span', { classe: 'marca-t' }, '#' + e));
   if (!semGrupo && (t.area || t.subgrupo)) marcas.push(el('span', { classe: 'marca-t' }, [t.area, t.subgrupo].filter(Boolean).join(' › ')));
   if (marca) marcas.push(el('span', { classe: 'marca-t aviso' }, marca));
 

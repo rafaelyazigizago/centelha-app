@@ -19,6 +19,9 @@ export function desenharGrupos() {
   tela.replaceChildren(
     el('h1', { id: 'titulo-grupos' }, 'Grupos'),
     el('p', { classe: 'data' }, 'Cada área com os seus subgrupos. Toque para abrir.'),
+    el('div', { classe: 'fileira', style: 'margin-top:10px' },
+      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('todas') }, 'Ver todas numa página'),
+      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('matriz') }, 'Matriz: importante × urgente')),
     grupos.length
       ? el('div', { classe: 'grupos' }, grupos.map(cartaoArea))
       : el('p', { classe: 'vazio' }, 'Nenhuma tarefa aberta. O que você anotar aparece aqui, na área dela.'),

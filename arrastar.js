@@ -3,7 +3,7 @@
 // Sempre há o outro jeito, sem arrastar (WCAG 2.5.7): "Subir/Descer na lista" e "Mover para…" no ⋯.
 // No Hoje (lote de 28/10), arrastar também passa a tarefa de uma caixa para outra; no celular, segurando o cartão (Fase C).
 import { estado, secao, redesenhar, falha } from './estado.js';
-import { caixaDoHoje, mudancaParaCaixa, CAIXAS_DO_HOJE } from './calculos.js';
+import { caixaDoHoje, mudancaParaCaixa, CAIXAS_DO_HOJE, quadranteDe, mudancaParaQuadrante, QUADRANTES, colunaDe, mudancaParaColuna, COLUNAS_QUADRO } from './calculos.js';
 import * as dados from './dados.js';
 import { selecao, abrirAcoes } from './acoes.js';
 import { avisar, mostrarEstado, vibrar } from './ui.js';
@@ -32,6 +32,8 @@ function podeSoltar(x, lista) {
   return origem === destino || (origem !== 'prioridades' && destino !== 'prioridades' && !!origem);
 }
 const listaDe = (caixaNo) => caixaNo?.querySelector('.lista[data-reordena]');
+// Onde dá para soltar fora de um cartão: uma caixa do Hoje ou um quadro da Matriz (o título, o espaço livre ou a lista vazia).
+const ALVO_CAIXA = '[data-caixa-hoje], [data-quadro], [data-coluna-quadro]';
 
 // Chamado por cada cartão (telas.js). No notebook, arrastar com o mouse; no celular, segurar e arrastar.
 export function ligarArrastar(no, t) {
@@ -110,9 +112,15 @@ export async function reordenar(x, alvoNo, depois) {
   } else {
     tarefas.forEach((t, i) => { const nova = (i + 1) * 1000; if (t.ordem !== nova) patches.set(t.id, { ordem: nova }); });
   }
-  const caixa = lista.dataset.caixa;
+  const caixa = lista.dataset.caixa, quadrante = lista.dataset.quadrante, coluna = lista.dataset.coluna;
   let destino = null, mudouLista = false;
-  if (caixa) {   // caixas do Hoje: muda o dia e a parte do dia, ou a situação
+  if (coluna) {   // o Quadro: muda a situação, ou acende/apaga em "Feitas"
+    mudouLista = colunaDe(x) !== coluna;
+    destino = mudouLista ? mudancaParaColuna(x, coluna, new Date().toISOString()) : null;
+  } else if (quadrante) {   // a Matriz: troca as marcas Importante e Urgente
+    mudouLista = quadranteDe(x) !== quadrante;
+    destino = mudouLista ? mudancaParaQuadrante(x, quadrante) : null;
+  } else if (caixa) {   // caixas do Hoje: muda o dia e a parte do dia, ou a situação
     mudouLista = caixaDoHoje(x, secao(x)) !== caixa;
     destino = mudouLista ? mudancaParaCaixa(x, caixa, estado.hoje) : null;
     if (mudouLista && !destino) return;
@@ -127,13 +135,13 @@ export async function reordenar(x, alvoNo, depois) {
   const lugarAntes = estado.lugares.get(x.id), secaoAntes = estado.secoes.get(x.id);
   const aplicar = (valores) => { for (const [id, p] of valores) Object.assign(porId(id), p); };
   aplicar(patches);
-  if (mudouLista && !caixa) estado.lugares.set(x.id, { ...destino });   // você mesmo pôs ali: aparece onde soltou
+  if (mudouLista && !caixa && !quadrante && !coluna) estado.lugares.set(x.id, { ...destino });   // você mesmo pôs ali: aparece onde soltou
   if (mudouLista && 'dia' in destino) estado.secoes.set(x.id, 'hoje');   // trouxe para uma parte do dia: fica no Hoje
   redesenhar();
   mostrarEstado('Salvando…');
   const desfazerNaTela = () => {
     aplicar(antes);
-    if (mudouLista && !caixa) estado.lugares.set(x.id, lugarAntes);
+    if (mudouLista && !caixa && !quadrante && !coluna) estado.lugares.set(x.id, lugarAntes);
     if (mudouLista && caixa) estado.secoes.set(x.id, secaoAntes);
     redesenhar();
   };
@@ -146,6 +154,8 @@ export async function reordenar(x, alvoNo, depois) {
   }
   mostrarEstado('Salvo ✓');
   const rotulo = !mudouLista ? `Nova ordem · ${x.titulo}`
+    : coluna ? `${x.titulo} → ${COLUNAS_QUADRO.find(([c]) => c === coluna)[1]}`
+    : quadrante ? `${x.titulo} → ${QUADRANTES.find(([q]) => q === quadrante)[1]}`
     : caixa ? `${x.titulo} → ${Object.fromEntries(CAIXAS_DO_HOJE)[caixa]}`
     : `${x.titulo} → ${[destino.area, destino.subgrupo].filter(Boolean).join(' › ')}`;
   avisar(rotulo, async () => {
@@ -159,7 +169,7 @@ export async function reordenar(x, alvoNo, depois) {
 
 // ---------- Soltar numa caixa do Hoje fora de um cartão (caixa vazia, título, espaço livre) ----------
 document.addEventListener('dragover', (e) => {
-  const caixaNo = e.target.closest?.('[data-caixa-hoje]');
+  const caixaNo = e.target.closest?.(ALVO_CAIXA);
   const x = porId(estado.arrastando);
   if (!caixaNo || !podeSoltar(x, listaDe(caixaNo))) return;
   e.preventDefault();
@@ -168,7 +178,7 @@ document.addEventListener('dragover', (e) => {
   caixaNo.classList.add('caixa-alvo');
 });
 document.addEventListener('drop', (e) => {
-  const caixaNo = e.target.closest?.('[data-caixa-hoje]');
+  const caixaNo = e.target.closest?.(ALVO_CAIXA);
   document.querySelectorAll('.caixa-alvo').forEach((n) => n.classList.remove('caixa-alvo'));
   const x = porId(estado.arrastando), lista = listaDe(caixaNo);
   if (!caixaNo || !podeSoltar(x, lista)) return;
@@ -201,7 +211,7 @@ function ligarSegurar(no, t) {
       cartao.classList.add(depois ? 'soltar-depois' : 'soltar-antes');
       return { no: cartao, depois };
     }
-    const caixaNo = sob?.closest('[data-caixa-hoje]');
+    const caixaNo = sob?.closest(ALVO_CAIXA);
     if (!cartao && caixaNo && podeSoltar(t, listaDe(caixaNo))) { caixaNo.classList.add('caixa-alvo'); return { no: listaDe(caixaNo), depois: true }; }
     return null;
   };

@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://hlvejnlirctodkvmjehj.supabase.co';
 // Chave pública por desenho: só abre o que as regras por linha (RLS) do banco deixarem.
 const CHAVE_PUBLICA = 'sb_publishable_B8VUf-oWJwakz9uBSXEeIA_TeSn9y0m';
 
-export const CAMPOS = 'id,titulo,notas,estado,dia,parte_do_dia,hora,area,subgrupo,ordem,etiquetas,lentes,prioridade_semana,vezes_adiada,' +
+export const CAMPOS = 'id,titulo,notas,estado,dia,inicio,parte_do_dia,hora,area,subgrupo,ordem,etiquetas,lentes,prioridade_semana,vezes_adiada,' +
   'porque,parei_aqui,proximo_passo,pronto_quando,resultado_meta,resultado_efeito,prova_url,privada,feita_em,criado_em';
 
 export let banco;
