@@ -313,6 +313,6 @@ export function desenharSemana(entrando = false) {
     el('section', { classe: 'grupo cartao' },
       el('h2', {}, nomeDia[0].toUpperCase() + nomeDia.slice(1), el('span', { classe: 'n' }, String(doDia.length))),
       doDia.length ? el('div', { classe: 'lista', style: 'margin-top:10px' }, doDia.map((t) => linha(t)))
-        : el('p', { classe: 'vazio' }, diaEscolhido === domingo ? 'Domingo é descanso.' : 'Nada marcado para este dia.')),
+        : el('p', { classe: 'vazio' }, diaEscolhido === domingo ? 'Domingo é descanso.' : 'Nada marcado para este dia. Na tarefa aberta, escolha este dia para ela vir para cá.')),
   );
 }

@@ -110,6 +110,31 @@ function ajustarAoTamanho() {
 largo.addEventListener('change', ajustarAoTamanho);
 window.addEventListener('resize', ajustarAoTamanho);   // reserva: nem todo navegador avisa a troca pelo "change"
 
+// ---------- Carregando e sem banco (lote 52) ----------
+// Enquanto carrega, o desenho da tela em cartões cinza, sem pular. Sem banco, uma tela que explica e tenta de novo.
+function mostrarSoHoje(conteudo) {
+  for (const nome of TELAS) $(`tela-${nome}`).hidden = nome !== 'hoje';
+  $('tela-hoje').replaceChildren(...conteudo);
+}
+function mostrarCarregando() {
+  mostrarSoHoje([
+    el('h1', { id: 'titulo-hoje' }, 'Hoje'),
+    el('div', { classe: 'lista esqueleto', 'aria-hidden': 'true' }, [1, 2, 3].map(() => el('div', { classe: 'tarefa esqueleto-cartao' }))),
+    el('p', { classe: 'vazio', role: 'status' }, 'Trazendo as suas tarefas…'),
+  ]);
+}
+function mostrarSemBanco() {
+  mostrarEstado('Não carregou', true);
+  mostrarSoHoje([
+    el('h1', { id: 'titulo-hoje' }, 'Não consegui falar com o banco'),
+    el('p', { classe: 'data' }, 'Suas tarefas estão guardadas. Só não chegaram até aqui agora.'),
+    el('ul', { classe: 'lista' },
+      el('li', { classe: 'vazio' }, 'Sem internet? Quando ela voltar, eu tento de novo sozinho.'),
+      el('li', { classe: 'vazio' }, 'O banco pode estar em pausa. Tente de novo em alguns minutos.')),
+    el('button', { type: 'button', classe: 'btn grande', id: 'tentar-de-novo', onclick: () => entrar(estado.usuario) }, 'Tentar de novo'),
+  ]);
+}
+
 // ---------- Entrar ----------
 function mostrarEntrar() {
   for (const nome of TELAS) $(`tela-${nome}`).hidden = true;
@@ -142,12 +167,12 @@ async function entrar(usuario) {
   document.body.classList.add('logado');
   mostrarPet(true);
   mostrarEstado('Carregando…');
+  if (!estado.carregadoEm) mostrarCarregando();
   try {
     estado.espacoId = await dados.espacoPessoal(usuario.id);
   } catch (erro) {
     console.error(erro);
-    mostrarEstado('Não carregou', true);
-    avisar('Não deu para abrir o seu espaço. Recarregue a página.');
+    mostrarSemBanco();
     return;
   }
   if (await carregar()) irPara('hoje');
@@ -160,6 +185,7 @@ async function carregar() {
     [estado.tarefas, estado.passos] = await Promise.all([dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos()]);
   } catch (erro) {
     console.error(erro);
+    if (!estado.carregadoEm) { mostrarSemBanco(); return false; }   // na 1ª carga, a tela que explica; depois, o que já está na tela fica
     mostrarEstado('Não carregou', true);
     avisar('Não deu para trazer as tarefas. Recarregue a página.');
     return false;
@@ -263,7 +289,10 @@ function ligar() {
     atalho(e);
   });
   window.addEventListener('offline', () => mostrarEstado('Sem internet: o que mudar agora não salva', true));
-  window.addEventListener('online', () => mostrarEstado('Conectado'));
+  window.addEventListener('online', () => {
+    mostrarEstado('Conectado');
+    if (estado.usuario && !estado.carregadoEm) entrar(estado.usuario);   // voltou a internet: tenta de novo sozinho
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden' && versaoNova && !textoPelaMetade()) { location.reload(); return; }
     if (document.visibilityState === 'visible') navigator.serviceWorker?.getRegistration().then((r) => r?.update()).catch(() => {});

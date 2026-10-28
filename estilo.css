@@ -139,6 +139,10 @@ section.grupo { margin-top: 22px; }
 .tarefa.entrou { animation: entrar calc(.5s * var(--t)) var(--mola); }
 .tarefa.vai { animation: sair calc(.35s * var(--t)) ease-in forwards; }
 .vazio { color: var(--suave); padding: 6px 4px; font-size: 1rem; }
+/* Carregando (lote 52): o desenho dos cartões, sem pular; com "Movimento: Parado", sem brilho */
+.esqueleto-cartao { height: 64px; background: color-mix(in srgb, var(--suave) 12%, var(--cartao)); }
+.mov-vivo .esqueleto-cartao, .mov-calmo .esqueleto-cartao { animation: esqueleto 1.4s ease-in-out infinite; }
+@keyframes esqueleto { 50% { opacity: .55; } }
 
 .lentes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
 
