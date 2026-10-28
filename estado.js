@@ -10,6 +10,7 @@ export const estado = {
   tarefas: [],
   projetos: [],        // desde a 0007: os projetos do espaço (vazio antes do Run)
   etiquetas: [],       // desde a 0007: as etiquetas cadastradas, com cor
+  listas: [],          // desde a 0007: o emoji e a cor de cada grupo e lista
   hoje: hojeISO(),
   secoes: new Map(),   // id → seção fixada ao carregar (nada muda de lugar sozinho)
   marcas: new Map(),   // id → aviso local, como "→ Amanhã" (não vai para o banco)

@@ -7,6 +7,7 @@ import { dobra, linha } from './telas.js';
 import { $, el } from './ui.js';
 import { tem0007 } from './dados.js';
 import { abrirCadastroEtiquetas } from './etiquetas.js';
+import { visualDoGrupo, visualDaLista, comEmoji } from './listas.js';
 
 const abertas = new Set();   // dobras que a pessoa abriu
 let abrirLista = () => {};
@@ -55,19 +56,22 @@ function cartaoArea(g) {
       desenharGrupos();
     },
   }, g.subgrupos.every((s) => abertas.has(chaveSub(g.nome, s.nome))) ? 'Fechar todos' : 'Abrir todos');
-  return dobra(chaveArea(g.nome), nome, g.total, [
+  const v = visualDoGrupo(g.nome);
+  return pintar(dobra(chaveArea(g.nome), comEmoji(nome, v), g.total, [
     g.subgrupos.length > 1 ? el('div', { classe: 'fileira' }, todos) : null,
     ...g.subgrupos.map((s) => cartaoSubgrupo(g.nome, s)),
-  ], abertas);
+  ], abertas), v);
 }
+// A cor do grupo ou da lista (0007) vira uma faixa na borda da dobra
+const pintar = (caixa, v) => { if (v?.cor) caixa.dataset.cor = v.cor; return caixa; };
 
 function cartaoSubgrupo(area, s) {
-  const nome = s.nome ?? 'Sem subgrupo';
-  return dobra(chaveSub(area, s.nome), nome, s.total, [
+  const nome = s.nome ?? 'Sem subgrupo', v = visualDaLista(area, s.nome);
+  return pintar(dobra(chaveSub(area, s.nome), comEmoji(nome, v), s.total, [
     el('div', { classe: 'fileira' }, el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('sub', area, s.nome) }, 'Abrir como lista')),
     el('div', { classe: 'lista' }, s.tarefas.map((t) => linha(t, { semGrupo: true, estrela: true }))),
     anotarAqui(area, s.nome, nome),
-  ], abertas, 'subgrupo');
+  ], abertas, 'subgrupo'), v);
 }
 
 // Anotar dentro do subgrupo: a tarefa já nasce com a área e o subgrupo ("amanhã", "sexta"… continuam valendo).

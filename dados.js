@@ -86,6 +86,19 @@ export async function mudarEtiqueta(id, patch) {
   mudouUma(await banco.from('etiquetas').update(patch).eq('id', id).select('id'));
 }
 
+// ---------- O visual das listas (0007): emoji e cor do grupo (subgrupo vazio) e de cada lista ----------
+const CAMPOS_LISTA = 'id,area,subgrupo,emoji,cor';
+export async function listas(espacoId) {
+  if (!tem0007) return [];
+  return exigir(await banco.from('listas').select(CAMPOS_LISTA).eq('espaco_id', espacoId));
+}
+export async function criarLista(espacoId, area, subgrupo, patch) {
+  return exigir(await banco.from('listas').insert({ espaco_id: espacoId, area, subgrupo: subgrupo ?? '', ...patch }).select(CAMPOS_LISTA).single());
+}
+export async function mudarLista(id, patch) {
+  mudouUma(await banco.from('listas').update(patch).eq('id', id).select('id'));
+}
+
 export async function passosDe(tarefaId) {
   return exigir(await banco.from('subtarefas').select('id,texto,feita,ordem,removida')
     .eq('tarefa_id', tarefaId).eq('removida', false).order('ordem', { ascending: true }));

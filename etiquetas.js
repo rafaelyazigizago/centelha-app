@@ -83,8 +83,8 @@ function linhaEtiqueta(nome, total) {
     }, cor ? `Cor ${cor} · ${nome}` : `Sem cor · ${nome}`)));
 }
 
-// As 10 cores e "sem cor". Tocar na cor escolhida tira a cor.
-function paleta(atual, escolher) {
+// As 10 cores e "sem cor". Tocar na cor escolhida tira a cor. Também no visual das listas (listas.js).
+export function paleta(atual, escolher) {
   return el('div', { classe: 'paleta', role: 'group', 'aria-label': 'Cor' }, PALETA.map((cor) => el('button', {
     type: 'button', classe: 'cor', 'data-cor': cor, 'data-mantem-aviso': true, 'aria-pressed': String(cor === atual), 'aria-label': `Cor ${cor}`, title: cor,
     onclick: () => escolher(cor === atual ? null : cor),

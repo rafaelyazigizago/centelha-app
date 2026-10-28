@@ -9,6 +9,8 @@ import { dobra, linha } from './telas.js';
 import { comecarSelecao, limparSelecao } from './acoes.js';
 import { $, el, icone } from './ui.js';
 import { quadro, tabela, linhaDoTempo, calendario } from './visoes.js';
+import { tem0007 } from './dados.js';
+import { visualDoGrupo, visualDaLista, comEmoji, abrirVisual } from './listas.js';
 
 const abertas = new Set();
 
@@ -71,6 +73,7 @@ export function desenharLista() {
     trocaDeVisao(L),
     el('div', { classe: 'fileira', style: 'margin:8px 0 14px' },
       el('span', { classe: 'ajuda', style: 'align-self:center;flex:1' }, `${ativas.length} ${ativas.length === 1 ? 'aberta' : 'abertas'}`),
+      podeVisual(L) ? el('button', { type: 'button', classe: 'pilula', id: 'visual-lista', 'data-mantem-aviso': true, onclick: () => abrirVisual(L.area, L.tipo === 'sub' ? L.subgrupo : null) }, 'Emoji e cor') : null,
       el('button', { type: 'button', classe: 'pilula', 'aria-pressed': String(estado.selecionando), 'data-mantem-aviso': true,
         onclick: () => (estado.selecionando ? limparSelecao() : comecarSelecao()) }, estado.selecionando ? 'Parar de escolher' : 'Escolher várias')),
     ...corpo,
@@ -121,7 +124,9 @@ function trocaDeVisao(L) {
 }
 const nomeDoProjeto = (id) => estado.projetos.find((p) => p.id === id)?.nome ?? 'Projeto';
 const tituloDe = (L) => (L.tipo === 'calendario' ? 'Calendário' : L.tipo === 'todas' ? 'Todas' : L.tipo === 'matriz' ? 'Matriz' : L.tipo === 'prioridades' ? 'Prioridades da semana'
-  : L.tipo === 'projeto' ? nomeDoProjeto(L.area) : L.tipo === 'area' ? L.area : (L.subgrupo ?? 'Sem subgrupo'));
+  : L.tipo === 'projeto' ? nomeDoProjeto(L.area) : L.tipo === 'area' ? comEmoji(L.area, visualDoGrupo(L.area)) : comEmoji(L.subgrupo ?? 'Sem subgrupo', visualDaLista(L.area, L.subgrupo)));
+// Emoji e cor (0007): no grupo e nas listas com nome
+const podeVisual = (L) => tem0007 && !!L.area && (L.tipo === 'area' || (L.tipo === 'sub' && !!L.subgrupo));
 export const tituloDaLista = (L) => (L ? tituloDe(L) : 'Lista');
 const acimaDe = (L) => (L.tipo === 'calendario' ? 'As tarefas de cada dia' : L.tipo === 'todas' ? 'Todas as tarefas abertas, por grupo' : L.tipo === 'projeto' ? 'Projeto'
   : L.tipo === 'sub' ? L.area : L.tipo === 'area' ? 'Grupo inteiro' : 'Tarefas com estrela');

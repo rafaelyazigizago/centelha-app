@@ -7,6 +7,7 @@ import { estado } from './estado.js';
 import { $, el, icone, abrirFolha, fecharFolha } from './ui.js';
 import { ligarSoltar } from './arrastar.js';
 import { trazerParaHoje, emLote, moverGrupo } from './acoes.js';
+import { visualDoGrupo, visualDaLista, comEmoji } from './listas.js';
 
 let ir = () => {};
 let abrirLista = () => {};
@@ -51,12 +52,14 @@ export function desenharMenu() {
       type: 'button', classe: 'menu-seta', 'aria-expanded': String(aberto), 'aria-label': `${aberto ? 'Fechar' : 'Abrir'} as listas de ${g.nome}`,
       onclick: () => { if (aberto) areasAbertas.delete(g.nome); else areasAbertas.add(g.nome); desenharMenu(); },
     }, '›');
+    const vg = visualDoGrupo(g.nome);   // emoji e cor (0007): o emoji entra no lugar da pasta
+    const pintar = (botao, v) => { if (v?.cor) botao.dataset.cor = v.cor; return botao; };
     return el('div', { classe: 'menu-grupo' + (aberto ? ' aberto' : '') },
       el('div', { classe: 'menu-linha' }, seta,
-        solta(comNome(item(g.nome, 'grupos', g.total, atual('lista', 'area', g.nome), () => { areasAbertas.add(g.nome); abrirLista('area', g.nome); }), g.nome),
+        solta(pintar(comNome(item(g.nome, vg?.emoji ? null : 'grupos', g.total, atual('lista', 'area', g.nome), () => { areasAbertas.add(g.nome); abrirLista('area', g.nome); }), comEmoji(g.nome, vg)), vg),
           (ts) => moverGrupo(ts, g.nome, null))),
-      aberto ? g.subgrupos.map((s) => solta(comNome(item(s.nome ?? 'Sem subgrupo', null, s.total, atual('lista', 'sub', g.nome, s.nome),
-        () => abrirLista('sub', g.nome, s.nome), 'menu-sub'), s.nome ?? 'Sem subgrupo'), (ts) => moverGrupo(ts, g.nome, s.nome))) : null);
+      aberto ? g.subgrupos.map((s) => { const vs = visualDaLista(g.nome, s.nome); return solta(pintar(comNome(item(s.nome ?? 'Sem subgrupo', null, s.total, atual('lista', 'sub', g.nome, s.nome),
+        () => abrirLista('sub', g.nome, s.nome), 'menu-sub'), comEmoji(s.nome ?? 'Sem subgrupo', vs)), vs), (ts) => moverGrupo(ts, g.nome, s.nome)); }) : null);
   });
 
   menu.replaceChildren(

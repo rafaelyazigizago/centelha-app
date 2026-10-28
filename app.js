@@ -205,8 +205,8 @@ async function entrar(usuario) {
 async function carregar() {
   const desde = deISO(segundaDaSemana(hojeISO())).toISOString();
   try {
-    [estado.tarefas, estado.passos, estado.projetos, estado.etiquetas] = await comTempo(Promise.all([
-      dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos(), dados.projetos(estado.espacoId), dados.etiquetas(estado.espacoId)]));
+    [estado.tarefas, estado.passos, estado.projetos, estado.etiquetas, estado.listas] = await comTempo(Promise.all([
+      dados.carregarTarefas(estado.espacoId, desde), dados.contarPassos(), dados.projetos(estado.espacoId), dados.etiquetas(estado.espacoId), dados.listas(estado.espacoId)]));
   } catch (erro) {
     console.error(erro);
     if (!estado.carregadoEm) { mostrarSemBanco(); return false; }   // na 1ª carga, a tela que explica; depois, o que já está na tela fica
