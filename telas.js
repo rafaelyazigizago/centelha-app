@@ -1,6 +1,6 @@
 // Centelha · telas Hoje, Semana e Caixa de entrada.
 import { diaPorExtenso, rotuloDia, somarDias, interpretar } from './datas.js';
-import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje } from './calculos.js';
+import { lampadasDoDia, varalDaSemana, tarefasDoDia, passaNasLentes, segundaDaSemana, CAIXAS_DO_HOJE, caixaDoHoje, yNoFio, FIO_SEMANA, FIO_DIA } from './calculos.js';
 import { estado, secao, alternarFeita, moverPara, recomecar, anotar } from './estado.js';
 import { $, el, icone, lampada, lampadaInterna, reiniciar, movimento } from './ui.js';
 import { alternarEstrela, abrirAcoes, alternarSelecao, selecao } from './acoes.js';
@@ -99,7 +99,7 @@ function varalMini() {
   const acendeuAgora = ultimasAcesas !== null && acesas > ultimasAcesas;
   for (let i = 0; i < n; i++) {
     const x = n === 1 ? largura / 2 : 20 + i * ((largura - 40) / (n - 1));
-    const y = 4 + Math.sin((x / largura) * Math.PI) * 12;
+    const y = yNoFio(FIO_DIA, x);
     const acesa = i < Math.min(acesas, n);
     const anima = acendeuAgora && i === Math.min(acesas, n) - 1 ? ' acendendo' : '';
     html += `<g transform="translate(${x - 9} ${y})"><g class="${anima.trim()}" style="transform-box:fill-box;transform-origin:center">${lampadaInterna(acesa, 0, 2, 18, 24)}</g></g>`;
@@ -285,7 +285,7 @@ export function desenharSemana(entrando = false) {
   let html = '<path class="fio" d="M2 18 Q90 74 180 40 T358 18"/>';
   dias.forEach((d, i) => {
     const x = 22 + i * 52.6;
-    const y = x <= 180 ? 18 + Math.sin(((x - 2) / 178) * Math.PI) * 30 : 40 - Math.sin(((x - 180) / 178) * Math.PI) * 14;
+    const y = yNoFio(FIO_SEMANA, x);
     const acesa = d.acesas > 0;
     const forca = d.total ? d.acesas / d.total : 0;
     const atraso = entrando && movimento() !== 'parado' ? i * (movimento() === 'calmo' ? 60 : 110) : 0;

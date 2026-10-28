@@ -130,3 +130,16 @@ export function mudancaParaCaixa(t, caixa, hoje) {
   if (situacaoDe(t)) patch.etiquetas = comSituacao(t.etiquetas, null);
   return patch;
 }
+
+// ---------- Os varais: cada lâmpada pendura no ponto do fio que fica na x dela (pedido da Lara, 28/10: "Lâmpadas fora da linha") ----------
+// O fio é feito de arcos de Bézier quadráticos [início, controle, fim]. A altura antiga vinha de um seno parecido com o fio,
+// e na quinta-feira a lâmpada ficava 22 pontos acima dele.
+export const FIO_SEMANA = [[[2, 18], [90, 74], [180, 40]], [[180, 40], [270, 6], [358, 18]]];   // "M2 18 Q90 74 180 40 T358 18"
+export const FIO_DIA = [[[0, 4], [160, 30], [320, 4]]];                                          // "M0 4 Q160 30 320 4"
+export function yNoFio(arcos, x) {
+  const [p0, p1, p2] = arcos.find(([, , fim]) => x <= fim[0]) ?? arcos.at(-1);
+  // x(t) = (1-t)²·x0 + 2(1-t)t·x1 + t²·x2  →  a·t² + b·t + c = 0
+  const a = p0[0] - 2 * p1[0] + p2[0], b = 2 * (p1[0] - p0[0]), c = p0[0] - x;
+  const t = Math.abs(a) < 1e-9 ? -c / b : (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+  return (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t ** 2 * p2[1];
+}
