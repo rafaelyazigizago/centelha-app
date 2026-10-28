@@ -374,7 +374,7 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 .quadro-kanban .tarefa .estrela:not([aria-pressed="true"]) { display: none; }   /* no Quadro, o título precisa do espaço */
 /* No notebook, Quadro, Tabela e Linha do tempo usam a largura toda (a lista comum continua com a coluna de leitura) */
 @media (min-width: 1000px) {
-  body:has(#tela-lista:not([hidden]) :is(.quadro-kanban, .tabela-tarefas, .linha-do-tempo)) :is(main, .topo) { max-width: none; }
+  body:has(#tela-lista:not([hidden]) :is(.quadro-kanban, .tabela-tarefas, .linha-do-tempo, .cal-grade)) :is(main, .topo) { max-width: none; }
 }
 .tabela-rolagem { overflow-x: auto; max-width: 100%; }
 .tabela-tarefas { width: 100%; border-collapse: collapse; font-size: .95rem; }
@@ -394,6 +394,23 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 .lt-barra { height: 22px; border-radius: 99px; border: 0; background: var(--luz); color: var(--acao); font-size: .75rem; cursor: pointer; min-width: 22px; }
 .lt-barra.feita { background: var(--feito); opacity: .6; }
 .lt-barra.antes { background: color-mix(in srgb, var(--luz) 45%, var(--cartao)); }
+/* Calendário do mês (28/10) */
+.cal-topo { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
+.cal-topo h2 { margin: 0; flex: 1; text-align: center; font-size: 1.2rem; }
+.cal-grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-semana { text-align: center; font-size: .75rem; color: var(--suave); padding: 2px 0; }
+.cal-semana.domingo { opacity: .6; }
+.cal-dia { min-height: 64px; border: 1px solid var(--linha); border-radius: 10px; padding: 4px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; background: var(--cartao); min-width: 0; overflow: hidden; }
+.cal-dia.fora { opacity: .45; }
+.cal-dia.hoje .cal-n { background: var(--luz); color: #14213D; border-radius: 99px; padding: 0 6px; align-self: flex-start; font-weight: 700; }
+.cal-dia.escolhido { outline: 2px solid var(--acao); outline-offset: -2px; }
+:root[data-tema="noite"] .cal-dia.escolhido { outline-color: var(--luz); }
+.cal-n { font-size: .8rem; font-weight: 700; color: var(--tinta); }
+.cal-tarefa { font-size: .72rem; line-height: 1.25; background: color-mix(in srgb, var(--luz) 22%, var(--cartao)); border-radius: 6px; padding: 1px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grab; }
+.cal-tarefa.feita { text-decoration: line-through; opacity: .6; }
+.cal-mais { font-size: .7rem; color: var(--suave); }
+@media (min-width: 1000px) { .cal-dia { min-height: 104px; } .cal-tarefa { font-size: .8rem; } }
+@media (max-width: 420px) { .cal-tarefa { font-size: .62rem; padding: 0 2px; } }
 /* Comentários e arquivos na tarefa (28/10) */
 .comentarios, .anexos { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 10px; }
 .comentarios li { background: var(--fundo); border: 1px solid var(--linha); border-radius: 14px; padding: 10px 12px; }

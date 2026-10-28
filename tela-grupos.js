@@ -21,7 +21,8 @@ export function desenharGrupos() {
     el('p', { classe: 'data' }, 'Cada área com os seus subgrupos. Toque para abrir.'),
     el('div', { classe: 'fileira', style: 'margin-top:10px' },
       el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('todas') }, 'Ver todas numa página'),
-      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('matriz') }, 'Matriz: importante × urgente')),
+      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('matriz') }, 'Matriz: importante × urgente'),
+      el('button', { type: 'button', classe: 'pilula', onclick: () => abrirLista('calendario') }, 'Calendário do mês')),
     grupos.length
       ? el('div', { classe: 'grupos' }, grupos.map(cartaoArea))
       : el('p', { classe: 'vazio' }, 'Nenhuma tarefa aberta. O que você anotar aparece aqui, na área dela.'),

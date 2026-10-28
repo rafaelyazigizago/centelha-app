@@ -36,6 +36,7 @@ export function desenharMenu() {
     solta(comNome(item('Prioridades', 'estrela', contar((t) => t.prioridade_semana), atual('lista', 'prioridades'), () => abrirLista('prioridades')), 'Prioridades'),
       (ts) => emLote(ts, { prioridade_semana: true }, { marca: '★ Prioridade', mensagem: `Estrela · ${quantas(ts)}` })),
     comNome(item('Semana', 'semana', 0, atual('semana'), () => ir('semana')), 'Semana'),
+    comNome(item('Calendário', 'calendario', 0, atual('lista', 'calendario'), () => abrirLista('calendario')), 'Calendário'),   // o mês (28/10)
     solta(comNome(item('Caixa', 'caixa', contar((t) => !t.dia), atual('caixa'), () => ir('caixa')), 'Caixa de entrada'),
       (ts) => emLote(ts, { dia: null }, { marca: '→ Caixa de entrada', mensagem: `${quantas(ts)} → Caixa de entrada` })),
     comNome(item('Todas', 'grupos', abertas.length, atual('lista', 'todas'), () => abrirLista('todas')), 'Todas'),   // a "Todas" do To Do (28/10)

@@ -1,8 +1,8 @@
 // Centelha · ver uma lista de outros jeitos (28/10, pedido de Rafael, como no Vikunja): Quadro, Tabela e Linha do tempo.
 // A Lista continua em tela-lista.js. As contas puras (colunas, barras) estão em calculos.js, com testes.
-import { COLUNAS_QUADRO, colunaDe, barraNaLinha, segundaDaSemana, temMarca } from './calculos.js';
-import { somarDias, rotuloDia } from './datas.js';
-import { estado, alternarFeita } from './estado.js';
+import { COLUNAS_QUADRO, colunaDe, barraNaLinha, segundaDaSemana, temMarca, semanasDoMes, noDiaDoCalendario } from './calculos.js';
+import { somarDias, rotuloDia, paraISO } from './datas.js';
+import { estado, alternarFeita, moverPara } from './estado.js';
 import { linha, abrir } from './telas.js';
 import { el, lampada } from './ui.js';
 
@@ -84,4 +84,57 @@ export function linhaDoTempo(tarefas) {
       comBarra.length ? `${comBarra.length} com dia nestas 6 semanas` : 'Nenhuma tarefa com dia nestas 6 semanas',
       semDia ? `${semDia} sem dia` : '', depois ? `${depois} depois disso` : '',
     ].filter(Boolean).join(' · ')));
+}
+
+// ---------- Calendário do mês (28/10): as tarefas em cada dia. Tocar no dia abre a lista dele embaixo;
+// arrastar uma tarefa para outro dia muda a data (no notebook com o mouse, no celular segurando o cartão da lista) ----------
+const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+const NO_DIA = 3;   // tarefas à vista em cada dia; o resto vira "+N"
+let mesCal = null, diaCal = null;
+export function calendario(tarefas, opcoes, redesenhar) {
+  const hoje = estado.hoje;
+  mesCal ??= hoje.slice(0, 7);
+  diaCal ??= hoje;
+  const [ano, mes] = mesCal.split('-').map(Number);
+  const irPara = (k) => { mesCal = paraISO(new Date(ano, mes - 1 + k, 1)).slice(0, 7); redesenhar(); };
+  const topo = el('div', { classe: 'cal-topo' },
+    el('button', { type: 'button', classe: 'icone-btn', 'aria-label': 'Mês anterior', onclick: () => irPara(-1) }, '‹'),
+    el('h2', { id: 'cal-mes' }, `${MESES[mes - 1]} de ${ano}`),
+    el('button', { type: 'button', classe: 'icone-btn', 'aria-label': 'Próximo mês', onclick: () => irPara(1) }, '›'),
+    el('button', { type: 'button', classe: 'pilula', onclick: () => { mesCal = hoje.slice(0, 7); diaCal = hoje; redesenhar(); } }, 'Hoje'));
+  const dias = semanasDoMes(ano, mes).flat().map((iso) => {
+    const doDia = tarefas.filter((t) => noDiaDoCalendario(t, iso));
+    const classes = ['cal-dia', iso.slice(0, 7) !== mesCal && 'fora', iso === hoje && 'hoje', iso === diaCal && 'escolhido'].filter(Boolean).join(' ');
+    return el('div', {
+      classe: classes, 'data-dia-cal': iso, role: 'button', tabindex: '0', 'aria-pressed': String(iso === diaCal),
+      'aria-label': `${rotuloDia(iso)}: ${doDia.length ? `${doDia.length} ${doDia.length === 1 ? 'tarefa' : 'tarefas'}` : 'nada marcado'}`,
+      onclick: () => { diaCal = iso; redesenhar(); },
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); diaCal = iso; redesenhar(); } },
+    },
+    el('span', { classe: 'cal-n' }, String(+iso.slice(8))),
+    ...doDia.slice(0, NO_DIA).map((t) => el('span', {
+      classe: 'cal-tarefa' + (t.estado === 'feita' ? ' feita' : ''), draggable: 'true', 'data-id': t.id,
+      ondragstart: (e) => { estado.arrastando = t.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', t.titulo); },
+      ondragend: () => { estado.arrastando = null; },
+    }, t.titulo)),
+    doDia.length > NO_DIA ? el('span', { classe: 'cal-mais' }, `+${doDia.length - NO_DIA}`) : null);
+  });
+  const doEscolhido = tarefas.filter((t) => noDiaDoCalendario(t, diaCal));
+  const semDia = tarefas.filter((t) => t.estado === 'aberta' && !t.dia).length;
+  return el('div', {},
+    topo,
+    el('div', { classe: 'cal-grade', role: 'grid', 'aria-labelledby': 'cal-mes' },
+      SEMANA.map((d, i) => el('div', { classe: 'cal-semana' + (i === 6 ? ' domingo' : '') }, d)), ...dias),
+    el('section', { classe: 'grupo' },
+      el('h2', {}, rotuloDia(diaCal), el('span', { classe: 'n' }, String(doEscolhido.length))),
+      doEscolhido.length
+        ? el('div', { classe: 'lista', 'data-reordena': true, 'data-dia-lista': diaCal }, doEscolhido.map((t) => linha(t, opcoes)))
+        : el('p', { classe: 'vazio' }, 'Nada marcado para este dia. Arraste uma tarefa para cá, ou escolha este dia na tarefa aberta.')),
+    semDia ? el('p', { classe: 'ajuda' }, `${semDia} sem dia, na Caixa de entrada`) : null);
+}
+
+// Soltar uma tarefa arrastada num dia do calendário muda a data dela (com aviso e Desfazer, como sempre).
+export function soltarNoDia(id, iso) {
+  const t = estado.tarefas.find((x) => x.id === id);
+  if (t && t.dia !== iso) moverPara(t, iso);
 }

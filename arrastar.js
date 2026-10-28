@@ -7,6 +7,7 @@ import { caixaDoHoje, mudancaParaCaixa, CAIXAS_DO_HOJE, quadranteDe, mudancaPara
 import * as dados from './dados.js';
 import { selecao, abrirAcoes } from './acoes.js';
 import { avisar, mostrarEstado, vibrar } from './ui.js';
+import { soltarNoDia } from './visoes.js';
 
 const largo = matchMedia('(min-width: 1000px)');
 const porId = (id) => estado.tarefas.find((t) => t.id === id);
@@ -187,6 +188,22 @@ document.addEventListener('drop', (e) => {
 });
 document.addEventListener('dragend', () => document.querySelectorAll('.caixa-alvo').forEach((n) => n.classList.remove('caixa-alvo')));
 
+// O calendário do mês (28/10): soltar num dia muda a data.
+document.addEventListener('dragover', (e) => {
+  const dia = e.target.closest?.('[data-dia-cal]');
+  if (!dia || !estado.arrastando || tarefasArrastadas().length > 1) return;
+  e.preventDefault();
+  document.querySelectorAll('.caixa-alvo').forEach((n) => n !== dia && n.classList.remove('caixa-alvo'));
+  dia.classList.add('caixa-alvo');
+});
+document.addEventListener('drop', (e) => {
+  const dia = e.target.closest?.('[data-dia-cal]');
+  if (!dia || !estado.arrastando) return;
+  e.preventDefault();
+  dia.classList.remove('caixa-alvo');
+  soltarNoDia(estado.arrastando, dia.dataset.diaCal);
+});
+
 // ---------- Celular (Fase C): segurar ~0,4 s e arrastar ----------
 // Antes disso o dedo rola a tela como sempre. Segurou e soltou sem mexer: abre as ações (o ⋯), como antes.
 const SEGURAR_MS = 400, FOLGA_PX = 10, BORDA_PX = 80;
@@ -213,6 +230,8 @@ function ligarSegurar(no, t) {
     }
     const caixaNo = sob?.closest(ALVO_CAIXA);
     if (!cartao && caixaNo && podeSoltar(t, listaDe(caixaNo))) { caixaNo.classList.add('caixa-alvo'); return { no: listaDe(caixaNo), depois: true }; }
+    const diaNo = sob?.closest('[data-dia-cal]');   // o calendário do mês
+    if (!cartao && diaNo) { diaNo.classList.add('caixa-alvo'); return { dia: diaNo.dataset.diaCal }; }
     return null;
   };
   const passo = () => {   // perto da borda de cima ou de baixo, a tela rola sozinha
@@ -257,7 +276,8 @@ function ligarSegurar(no, t) {
     const andou = ultimo && Math.hypot(ultimo.x - inicio.x, ultimo.y - inicio.y) > FOLGA_PX;
     const soltar = alvo;
     fim();
-    if (soltar) reordenar(t, soltar.no, soltar.depois);
+    if (soltar?.dia) soltarNoDia(t.id, soltar.dia);
+    else if (soltar) reordenar(t, soltar.no, soltar.depois);
     else if (!andou) abrirAcoes(t);
   });
   no.addEventListener('touchcancel', fim);

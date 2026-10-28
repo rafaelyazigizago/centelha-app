@@ -237,3 +237,14 @@ export function proximaVez(t, hoje) {
   }
   return d;
 }
+
+// ---------- Calendário do mês (28/10) ----------
+// As semanas do mês, de segunda a domingo, da segunda que abre o dia 1 até o domingo que fecha o último dia.
+export function semanasDoMes(ano, mes) {   // mes: 1 a 12
+  const primeiro = paraISO(new Date(ano, mes - 1, 1)), ultimo = paraISO(new Date(ano, mes, 0));
+  const semanas = [];
+  for (let d = segundaDaSemana(primeiro); d <= ultimo; d = somarDias(d, 7)) semanas.push(Array.from({ length: 7 }, (_, i) => somarDias(d, i)));
+  return semanas;
+}
+// Num dia do calendário: as abertas marcadas para ele e as feitas nele (como no varal da semana).
+export const noDiaDoCalendario = (t, iso) => (t.estado === 'aberta' && t.dia === iso) || (t.estado === 'feita' && diaLocal(t.feita_em) === iso);

@@ -8,12 +8,12 @@ import { estado, lugar, anotar } from './estado.js';
 import { dobra, linha } from './telas.js';
 import { comecarSelecao, limparSelecao } from './acoes.js';
 import { $, el, icone } from './ui.js';
-import { quadro, tabela, linhaDoTempo } from './visoes.js';
+import { quadro, tabela, linhaDoTempo, calendario } from './visoes.js';
 
 const abertas = new Set();
 
 export function abrirLista(tipo, area = null, subgrupo = null) {
-  const pertence = (t) => (tipo === 'todas' ? true : tipo === 'matriz' ? naMatriz(t, estado.hoje) : tipo === 'prioridades'
+  const pertence = (t) => (tipo === 'todas' || tipo === 'calendario' ? true : tipo === 'matriz' ? naMatriz(t, estado.hoje) : tipo === 'prioridades'
     ? !!t.prioridade_semana
     : lugar(t).area === area && (tipo === 'area' || lugar(t).subgrupo === subgrupo));
   const daLista = estado.tarefas.filter((t) => t.estado !== 'cancelada' && pertence(t));
@@ -105,9 +105,10 @@ function desenharTodas(L, tela, ativas, concluidas, opcoes) {
 
 // ---------- Ver por tipos (28/10, como no Vikunja): Lista · Quadro · Tabela · Linha do tempo ----------
 // A escolha fica guardada neste aparelho, para cada lista (como o resto de "Do seu jeito").
-const VISOES = [['lista', 'Lista'], ['quadro', 'Quadro'], ['tabela', 'Tabela'], ['linha', 'Linha do tempo']];
+const VISOES = [['lista', 'Lista'], ['quadro', 'Quadro'], ['tabela', 'Tabela'], ['linha', 'Linha do tempo'], ['calendario', 'Calendário']];
 const chaveVisao = (L) => `centelha-visao|${L.tipo}|${L.area ?? ''}|${L.subgrupo ?? ''}`;
 function visaoDe(L) {
+  if (L.tipo === 'calendario') return 'calendario';   // a lista "Calendário" do menu é sempre o calendário
   try { const v = localStorage.getItem(chaveVisao(L)); return VISOES.some(([k]) => k === v) ? v : 'lista'; } catch { return 'lista'; }
 }
 function trocaDeVisao(L) {
@@ -117,20 +118,21 @@ function trocaDeVisao(L) {
     onclick: () => { try { localStorage.setItem(chaveVisao(L), v); } catch { /* sem guardar: vale só agora */ } desenharLista(); },
   }, nome)));
 }
-const tituloDe = (L) => (L.tipo === 'todas' ? 'Todas' : L.tipo === 'prioridades' ? 'Prioridades da semana' : L.tipo === 'area' ? L.area : (L.subgrupo ?? 'Sem subgrupo'));
-const acimaDe = (L) => (L.tipo === 'todas' ? 'Todas as tarefas abertas, por grupo' : L.tipo === 'sub' ? L.area : L.tipo === 'area' ? 'Grupo inteiro' : 'Tarefas com estrela');
+const tituloDe = (L) => (L.tipo === 'calendario' ? 'Calendário' : L.tipo === 'todas' ? 'Todas' : L.tipo === 'prioridades' ? 'Prioridades da semana' : L.tipo === 'area' ? L.area : (L.subgrupo ?? 'Sem subgrupo'));
+const acimaDe = (L) => (L.tipo === 'calendario' ? 'As tarefas de cada dia' : L.tipo === 'todas' ? 'Todas as tarefas abertas, por grupo' : L.tipo === 'sub' ? L.area : L.tipo === 'area' ? 'Grupo inteiro' : 'Tarefas com estrela');
 function desenharVisao(L, tela, visao, todas, ativas, opcoes) {
   const corpo = visao === 'quadro' ? quadro(todas, opcoes, ordem)
     : visao === 'tabela' ? tabela(todas, desenharLista)
+    : visao === 'calendario' ? calendario(todas, opcoes, desenharLista)
     : linhaDoTempo(ativas);
-  tela.replaceChildren(
+  tela.replaceChildren(...[   // o que não existe (null) fica de fora, senão aparece escrito "null"
     el('p', { classe: 'data', style: 'margin-top:18px' }, acimaDe(L)),
     el('h1', { id: 'titulo-lista', style: 'margin-top:2px' }, tituloDe(L)),
-    trocaDeVisao(L),
-    el('p', { classe: 'ajuda', style: 'margin:8px 0 14px' }, visao === 'quadro' ? 'Arraste entre as colunas para mudar a situação. Soltar em "Feitas" acende a tarefa.'
+    L.tipo === 'calendario' ? null : trocaDeVisao(L),
+    el('p', { classe: 'ajuda', style: 'margin:8px 0 14px' }, visao === 'calendario' ? 'Toque num dia para ver a lista dele. Arraste uma tarefa para outro dia para mudar a data.' : visao === 'quadro' ? 'Arraste entre as colunas para mudar a situação. Soltar em "Feitas" acende a tarefa.'
       : visao === 'tabela' ? 'Toque no nome de uma coluna para ordenar por ela.' : 'Cada barra vai do início até o dia da tarefa. Toque para abrir.'),
     corpo,
-  );
+  ].filter(Boolean));
 }
 
 // A Matriz (28/10): importante × urgente, em 4 quadros. Arrastar de um quadro para outro troca as marcas.
