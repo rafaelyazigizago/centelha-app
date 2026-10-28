@@ -1,8 +1,10 @@
-// Centelha · service worker: sempre tenta a versão nova da rede; sem internet, abre a última guardada.
+// Centelha · service worker: sempre pergunta ao servidor se o arquivo mudou; sem internet, abre a última guardada.
 // Os dados (Supabase) nunca passam por aqui: só os arquivos da página.
-const VERSAO = 'centelha-2026-10-21-6';
+// A versão vem de versao.js, carimbada pelo scripts/publicar.sh. Mudou o carimbo, o navegador instala este service worker de novo.
+importScripts('versao.js');
+const VERSAO = `centelha-${self.VERSAO_APP || 'dev'}`;
 const ARQUIVOS = [
-  './', 'index.html', 'estilo.css', 'manifest.webmanifest',
+  './', 'index.html', 'estilo.css', 'manifest.webmanifest', 'versao.js',
   'app.js', 'datas.js', 'calculos.js', 'dados.js', 'estado.js', 'preferencias.js', 'ui.js', 'telas.js', 'tela-tarefa.js', 'tela-diario.js', 'tela-grupos.js', 'tela-lista.js', 'menu.js', 'acoes.js', 'pet.js', 'arrastar.js',
   'fontes/atkinson-hyperlegible-latin-400-normal.woff2', 'fontes/atkinson-hyperlegible-latin-700-normal.woff2',
   'fontes/bricolage-grotesque-latin-700-normal.woff2', 'fontes/bricolage-grotesque-latin-800-normal.woff2',
@@ -11,7 +13,8 @@ const ARQUIVOS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
+  // 'reload': direto do servidor, sem a cópia de 10 min que o navegador guarda (senão a versão nova nasce misturada com a velha).
+  e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(ARQUIVOS.map((a) => new Request(a, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -25,8 +28,10 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const pedido = e.request;
   if (pedido.method !== 'GET' || new URL(pedido.url).origin !== self.location.origin) return;
+  // 'no-cache': pergunta ao servidor se o arquivo mudou antes de usar a cópia do navegador.
+  const daRede = pedido.mode === 'navigate' ? fetch(pedido.url, { cache: 'no-cache' }) : fetch(pedido, { cache: 'no-cache' });
   e.respondWith(
-    fetch(pedido)
+    daRede
       .then((resposta) => {
         if (resposta.ok) {
           const copia = resposta.clone();

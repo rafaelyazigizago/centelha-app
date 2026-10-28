@@ -248,6 +248,7 @@ function ligar() {
   $('fechar-ajustes').addEventListener('click', () => fecharFolha('folha-ajustes'));
   $('exportar').addEventListener('click', exportar);
   $('sair').addEventListener('click', sair);
+  $('versao-app').textContent = `Versão do app: ${self.VERSAO_APP || 'dev'}`;
   document.querySelectorAll('#abas .aba').forEach((b) => b.addEventListener('click', () => irPara(b.dataset.aba)));
 
   document.addEventListener('keydown', (e) => {
@@ -264,15 +265,26 @@ function ligar() {
   window.addEventListener('offline', () => mostrarEstado('Sem internet: o que mudar agora não salva', true));
   window.addEventListener('online', () => mostrarEstado('Conectado'));
   document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && versaoNova && !textoPelaMetade()) { location.reload(); return; }
+    if (document.visibilityState === 'visible') navigator.serviceWorker?.getRegistration().then((r) => r?.update()).catch(() => {});
     if (document.visibilityState !== 'visible' || !estado.espacoId || folhaAtual() || momentoAberto()) return;
     if (Date.now() - estado.carregadoEm > RECARREGAR_DEPOIS_MS || hojeISO() !== estado.hoje) recarregar();
   });
 }
 
+let versaoNova = false;
+const textoPelaMetade = () => [...document.querySelectorAll('input:not([type]), input[type=text], input[type=search], textarea')].some((c) => c.value.trim());
+
 async function iniciar() {
   preferencias.aplicar();
   ligar();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) {
+    // Versão nova publicada: o service worker novo assume, e a página recarrega na próxima vez que ficar escondida,
+    // sem nada digitado pela metade. 'none': a conferência da versão não usa a cópia de 10 min do navegador.
+    const tinhaControle = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (tinhaControle) versaoNova = true; });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+  }
   dados.iniciar();
   const { data } = await dados.banco.auth.getSession();
   if (location.search.includes('code=')) history.replaceState(null, '', location.pathname);
