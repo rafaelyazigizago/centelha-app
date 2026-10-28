@@ -1,2 +1,2 @@
 // Centelha · a versão do app, carimbada pelo scripts/publicar.sh.
-self.VERSAO_APP = 'd51cd8c';
+self.VERSAO_APP = 'ec626f9';

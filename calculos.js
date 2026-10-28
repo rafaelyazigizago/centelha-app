@@ -249,10 +249,10 @@ export function semanasDoMes(ano, mes) {   // mes: 1 a 12
 // Num dia do calendário: as abertas marcadas para ele e as feitas nele (como no varal da semana).
 export const noDiaDoCalendario = (t, iso) => (t.estado === 'aberta' && t.dia === iso) || (t.estado === 'feita' && diaLocal(t.feita_em) === iso);
 
-// ---------- Mergulho (FZ8, 28/10) ----------
+// ---------- Chama, o foco com tempo (FZ8 + FZ7, 28/10; antes se chamava Mergulho) ----------
 // Os blocos que dá para escolher. O Pomodoro é 25 + 5, como recomenda o NHS (CATALOGO-FUNCIONALIDADES-TODO, linha do Pomodoro).
 // "Sem tempo" não tem fim: o hiperfoco não é cortado (ALTAS-HABILIDADES-TDAH-FUNCIONALIDADES, armadilha 4).
-export const PLANOS_MERGULHO = {
+export const PLANOS_CHAMA = {
   pomodoro: { nome: '25 + 5', foco: 25, pausa: 5, explica: 'Pomodoro: 25 min de foco e 5 de pausa' },
   m50: { nome: '50 min', foco: 50, pausa: 5, explica: 'Um bloco de 50 min' },
   m90: { nome: '90 min', foco: 90, pausa: 5, explica: 'Um bloco longo, de 90 min' },
@@ -264,7 +264,7 @@ export function paradasDevidas(decorridoMin, focoMin, cada = PARE_A_CADA) {
   const passaram = Math.floor(decorridoMin / cada);
   return focoMin ? Math.min(passaram, Math.ceil(focoMin / cada) - 1) : passaram;
 }
-// O tempo em minutos, nunca a hora. "Falta" arredonda para cima (19 min e meio = 20 min); "mergulhado" para baixo.
+// O tempo em minutos, nunca a hora. "Falta" arredonda para cima (19 min e meio = 20 min); o tempo de foco, para baixo.
 export const faltaTexto = (ms) => (ms <= 0 ? '0 min' : ms < 60000 ? 'menos de 1 min' : `${Math.ceil(ms / 60000)} min`);
 export const duracaoTexto = (ms) => {
   const min = Math.floor(Math.max(0, ms) / 60000);

@@ -4,7 +4,7 @@ import { rotuloDia, somarDias } from './datas.js';
 import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES, duracaoTexto, etiquetasLivres, comEtiqueta, mesmoNome } from './calculos.js';
 import { estado, mudar, falha, criarProximaVez, cancelarProxima } from './estado.js';
 import { dobra } from './telas.js';
-import { escolherMergulho } from './mergulho.js';
+import { escolherChama } from './chama.js';
 import { cadastroDe, corDe, sugestoes, garantirCadastro, abrirCadastroEtiquetas } from './etiquetas.js';
 import * as dados from './dados.js';
 import { $, el, icone, lampada, abrirFolha, fecharFolha, mostrarEstado, avisar, contar, movimento, reiniciar, fagulhas, vibrar } from './ui.js';
@@ -102,7 +102,7 @@ function desenharTarefa() {
     linhaQuando(),
     linhaLentes(),
     linhaMarcas(),
-    t.estado === 'aberta' ? el('button', { type: 'button', classe: 'btn claro mergulhar', id: 'mergulhar', html: `${icone('mergulho')}<span>Mergulhar nesta tarefa</span>`, onclick: () => escolherMergulho(t) }) : null,
+    t.estado === 'aberta' ? el('button', { type: 'button', classe: 'btn claro focar', id: 'focar', html: `${icone('chama')}<span>Focar nesta tarefa</span>`, onclick: () => escolherChama(t) }) : null,
     el('section', { classe: 'cartao importa bloco' }, campoTexto('porque', 'Por que importa', { dica: 'ex.: evita multa de R$ 480, libera 2 horas na sexta' })),
     el('section', { classe: 'cartao bloco' },
       campoTexto('parei_aqui', 'Parei aqui', { dica: 'onde você parou' }),
