@@ -14,6 +14,7 @@ import { aoAbrirTarefaPelasAcoes, abrirMover, alternarEstrela, limparSelecao, se
 import { alternarFeita, moverPara } from './estado.js';
 import * as preferencias from './preferencias.js';
 import { ligarPet, mostrarPet, abrirConversa } from './pet.js';
+import { mergulhoAberto, retomarMergulho, fecharCartaoMergulho } from './mergulho.js';
 import { $, el, mostrarEstado, avisar, fecharAviso, ligarAviso, abrirFolha, fecharFolha, folhaAtual, ouvir, reiniciar, movimento } from './ui.js';
 
 const ABAS = ['hoje', 'semana', 'grupos', 'caixa', 'diario'];
@@ -197,7 +198,7 @@ async function entrar(usuario) {
     mostrarSemBanco();
     return;
   }
-  if (await carregar()) irPara('hoje');
+  if (await carregar()) { irPara('hoje'); retomarMergulho(); }
 }
 
 // Abertas + feitas desde segunda (para as luzes do dia e o varal da semana).
@@ -258,7 +259,7 @@ async function exportar() {
 // Valem fora dos campos de texto: C conversar com a Centelha (o pet) · N nova tarefa · D ou Ctrl+D concluir · E estrela · H trazer para hoje · M mover.
 // D, E, H e M agem na tarefa aberta; M também nas escolhidas. Ctrl+N e Ctrl+T o navegador não deixa usar.
 function atalho(e) {
-  if (!estado.usuario || e.altKey || e.metaKey || momentoAberto() || folhaAtual()) return;
+  if (!estado.usuario || e.altKey || e.metaKey || momentoAberto() || folhaAtual() || mergulhoAberto()) return;
   const alvo = e.target;
   if (alvo.closest?.('input, textarea, select, [contenteditable="true"]')) return;
   const tecla = e.key.toLowerCase();
@@ -304,6 +305,7 @@ function ligar() {
     if (e.key === 'Escape') {
       if (momentoAberto()) fecharMomento(true);
       else if (folhaAtual()) fecharFolha();
+      else if (mergulhoAberto()) fecharCartaoMergulho();   // no mergulho, Esc só fecha o cartão: sair é no botão "Sair"
       else if (estado.selecionando) limparSelecao();
       else if (estado.painel) fecharPainel();
       else if (estado.aba === 'tarefa') irPara(abaDeVolta);
@@ -317,9 +319,9 @@ function ligar() {
     if (estado.usuario && !estado.carregadoEm) entrar(estado.usuario);   // voltou a internet: tenta de novo sozinho
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && versaoNova && !textoPelaMetade()) { location.reload(); return; }
+    if (document.visibilityState === 'hidden' && versaoNova && !textoPelaMetade() && !mergulhoAberto()) { location.reload(); return; }
     if (document.visibilityState === 'visible') navigator.serviceWorker?.getRegistration().then((r) => r?.update()).catch(() => {});
-    if (document.visibilityState !== 'visible' || !estado.espacoId || folhaAtual() || momentoAberto()) return;
+    if (document.visibilityState !== 'visible' || !estado.espacoId || folhaAtual() || momentoAberto() || mergulhoAberto()) return;
     if (Date.now() - estado.carregadoEm > RECARREGAR_DEPOIS_MS || hojeISO() !== estado.hoje) recarregar();
   });
 }

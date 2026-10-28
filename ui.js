@@ -55,8 +55,8 @@ export function fagulhas(alvo) {
   }
 }
 
-export function vibrar() {
-  if (document.body.dataset.vibrar === 'sim' && navigator.vibrate) navigator.vibrate(18);
+export function vibrar(padrao = 18) {
+  if (document.body.dataset.vibrar === 'sim' && navigator.vibrate) navigator.vibrate(padrao);
 }
 
 export function contar(elemento, de, ate, ms = 500) {

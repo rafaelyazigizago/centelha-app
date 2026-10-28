@@ -4,6 +4,7 @@ import { rotuloDia, somarDias } from './datas.js';
 import { lampadasDoDia, feitasNaSemana, temMarca, comMarca, diaLocal, REPETICOES } from './calculos.js';
 import { estado, mudar, falha, criarProximaVez, cancelarProxima } from './estado.js';
 import { dobra } from './telas.js';
+import { escolherMergulho } from './mergulho.js';
 import * as dados from './dados.js';
 import { $, el, icone, lampada, abrirFolha, fecharFolha, mostrarEstado, avisar, contar, movimento, reiniciar, fagulhas, vibrar } from './ui.js';
 
@@ -94,12 +95,13 @@ export function textoParaOuvir() {
 
 // ---------- A tela ----------
 function desenharTarefa() {
-  $('tela-tarefa').replaceChildren(
+  $('tela-tarefa').replaceChildren(...[   // o que não existe (null) fica de fora, senão aparece escrito "null"
     el('button', { type: 'button', classe: 'voltar', onclick: () => voltar() }, noPainel ? '✕ Fechar' : `‹ ${nomeVolta}`),
     tituloEditavel(),
     linhaQuando(),
     linhaLentes(),
     linhaMarcas(),
+    t.estado === 'aberta' ? el('button', { type: 'button', classe: 'btn claro mergulhar', id: 'mergulhar', html: `${icone('mergulho')}<span>Mergulhar nesta tarefa</span>`, onclick: () => escolherMergulho(t) }) : null,
     el('section', { classe: 'cartao importa bloco' }, campoTexto('porque', 'Por que importa', { dica: 'ex.: evita multa de R$ 480, libera 2 horas na sexta' })),
     el('section', { classe: 'cartao bloco' },
       campoTexto('parei_aqui', 'Parei aqui', { dica: 'onde você parou' }),
@@ -116,7 +118,7 @@ function desenharTarefa() {
       campoTexto('notas', 'Notas', { linhas: 4 }),
     ]),
     acoes(),
-  );
+  ].filter(Boolean));
 }
 
 function tituloEditavel() {

@@ -246,6 +246,47 @@ input[type="range"] { width: 100%; accent-color: var(--luz); min-height: 44px; }
 .momento .btn { background: var(--luz); color: #0E1626; box-shadow: 0 4px 0 var(--luz-sombra); }
 .momento .desfazer { border: 0; background: transparent; color: #B8C2D3; min-height: 48px; text-decoration: underline; }
 
+/* Mergulho (lote 36h): a tela inteira para uma tarefa, no mesmo céu do "Acesa!". Escura nos dois temas, para tirar estímulo. */
+.mergulho { position: fixed; inset: 0; z-index: 30; background: var(--momento-fundo); color: #EEF2F7; display: flex; justify-content: center; overflow-y: auto;
+  padding: calc(12px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  opacity: 0; transition: opacity calc(.3s * var(--t)); --foco: #8DB4FF; color-scheme: dark; }
+.mergulho.aberto { opacity: 1; }
+.mergulho .miolo { width: 100%; max-width: 30rem; min-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.mg-topo { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mg-fase { font-size: 1rem; color: #B8C2D3; }
+.mergulho .desfazer { border: 0; background: transparent; color: #B8C2D3; min-height: 48px; padding: 0 8px; text-decoration: underline; }
+.mg-relogio { position: relative; width: min(62vw, 240px); aspect-ratio: 1; max-width: 100%; }
+.mg-relogio svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
+.mg-relogio circle { fill: none; stroke-width: 7; }
+.mg-relogio .trilho { stroke: rgba(238, 242, 247, .12); }
+.mg-relogio .anel { stroke: var(--luz); stroke-linecap: round; transition: stroke-dashoffset calc(1s * var(--t)) linear; }
+.mg-relogio .anel.sem-fim { opacity: .35; }
+.mergulho.na-pausa .mg-relogio .anel { stroke: #7FC4A8; }
+.mg-numero { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.mg-numero b { font-family: var(--f-titulo); font-size: clamp(1.8rem, 9vw, 2.5rem); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.mg-numero span { color: #B8C2D3; font-size: 1rem; }
+.mg-titulo { margin: 0; text-align: center; font-size: 1.45rem; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
+.mg-passo { margin: -6px 0 0; color: #CFD6E2; text-align: center; }
+.mg-cartao { width: 100%; border: 1px solid rgba(238, 242, 247, .22); background: rgba(23, 34, 58, .9); border-radius: 18px; padding: 14px 16px; text-align: center; }
+.mg-cartao h3 { margin: 0 0 6px; font-size: 1.2rem; color: var(--luz); text-wrap: balance; }
+.mg-cartao p { margin: 0 0 8px; }
+.mg-meta { font-weight: 700; }
+.mg-meta-passo { color: #CFD6E2; }
+.mg-botoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+.mg-botoes .btn { flex: 1 1 auto; min-height: 48px; padding: 0 14px; white-space: nowrap; }
+.mergulho .btn { background: var(--luz); color: #0E1626; box-shadow: 0 4px 0 var(--luz-sombra); }
+.mergulho .btn.claro { background: transparent; color: #EEF2F7; border: 2px solid rgba(238, 242, 247, .3); box-shadow: none; }
+.mg-depois { width: 100%; }
+.mergulho .campo > label { color: #B8C2D3; }
+.mergulho .campo input { background: #17223A; border-color: #3A4A6B; color: #EEF2F7; }
+.mg-anotadas { margin: 0; font-size: 1rem; color: #CFD6E2; }
+.mg-anotadas:empty { display: none; }
+.mg-acoes { width: 100%; display: flex; gap: 12px; margin-top: auto; }
+.mg-acoes .btn { flex: 1; }
+.mergulhar { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 4px 0 12px; }
+.mergulhar svg { width: 22px; height: 22px; }
+body.mergulhando { overflow: hidden; }
+
 /* Semana */
 .varal svg { width: 100%; height: auto; overflow: visible; display: block; margin: 8px 0 12px; }
 .varal .pendente { cursor: pointer; }
